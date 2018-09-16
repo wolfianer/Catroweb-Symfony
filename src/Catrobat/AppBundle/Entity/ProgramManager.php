@@ -6,6 +6,7 @@ use Catrobat\AppBundle\Events\InvalidProgramUploadedEvent;
 use Catrobat\AppBundle\Events\ProgramAfterInsertEvent;
 use Catrobat\AppBundle\Exceptions\InvalidCatrobatFileException;
 use Catrobat\AppBundle\Requests\AddProgramRequest;
+use Catrobat\AppBundle\Services\CatrobatFileExtractor;
 use Catrobat\AppBundle\Services\ExtractedCatrobatFile;
 use Catrobat\AppBundle\Services\ProgramFileRepository;
 use Catrobat\AppBundle\Services\ScreenshotRepository;
@@ -17,6 +18,11 @@ use Catrobat\AppBundle\Events\ProgramInsertEvent;
 use Catrobat\AppBundle\Events\ProgramBeforePersistEvent;
 use Catrobat\AppBundle\Entity\TagRepository;
 use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Finder\Iterator\RecursiveDirectoryIterator;
+use Symfony\Component\HttpFoundation\JsonResponse;
+
+
+use Symfony\Component\HttpFoundation\File\File;
 
 class ProgramManager
 {
@@ -41,7 +47,7 @@ class ProgramManager
 
   protected $max_version;
 
-  public function __construct($file_extractor, $file_repository, $screenshot_repository, $entity_manager, $program_repository,
+  public function __construct(CatrobatFileExtractor $file_extractor, $file_repository, $screenshot_repository, $entity_manager, $program_repository,
                               $tag_repository, $program_like_repository, EventDispatcherInterface $event_dispatcher, $max_version = 0)
   {
     /** @var $program_repository ProgramRepository */
@@ -62,8 +68,69 @@ class ProgramManager
   {
     $file = $request->getProgramfile();
     /* @var $extracted_file ExtractedCatrobatFile */
+    /* @var $file File */
 
     $extracted_file = $this->file_extractor->extract($file);
+
+    $sounds = $extracted_file->getContainingSoundPaths();
+    $images = $extracted_file->getContainingImagePaths();;
+    $screenshots = $extracted_file->getScreenshotPath();
+    $screenshots = explode("/../web", $screenshots)[1];
+
+    $code_xml = true;
+    $permission_txt = true;
+
+    $di = new RecursiveDirectoryIterator($extracted_file->getPath(), true);
+    foreach (new \RecursiveIteratorIterator($di) as $filename => $file) {
+      $filename = $file->getFilename();
+      $filepath = explode("/../web", $file->getPath())[1];
+      $filepath = str_replace("//", "/", $filepath);
+
+      if ($filename === ".." || $filename === ".") {
+        continue;
+      }
+      else if ($filename === "code.xml" && $code_xml) {
+        $code_xml = false; // only 1
+        continue;
+      }
+      else if ($filename === "permissions.txt" && $permission_txt) {
+        $permission_txt = false;
+        continue;
+      }
+
+      $isSound = false;
+      foreach ($sounds as $sound) {
+        if (strpos($sound, $filename) !== false && strpos($sound, $filename) !== false) {
+          $isSound = true;
+        }
+      }
+      if ($isSound) {
+        continue;
+      }
+
+      $isImage = false;
+      foreach ($images as $image) {
+        if (strpos($image, $filename) !== false && strpos($image, $filename) !== false) {
+          $isImage = true;
+        }
+      }
+      if ($isImage) {
+        continue;
+      }
+
+      if (strpos($screenshots, $filename) && strpos($screenshots, $filename)) {
+        continue;
+      }
+
+      if (strpos($screenshots, "manual_screenshot") !== false &&
+        strpos($filename, "a") !== false) {
+          continue;
+      }
+
+//      return new JsonResponse($filepath . "/" . $filename . "   =======   " . $screenshots);
+      throw new \Exception("Invalid file upload: ");
+    }
+
     try
     {
       $event = $this->event_dispatcher->dispatch('catrobat.program.before', new ProgramBeforeInsertEvent($extracted_file));

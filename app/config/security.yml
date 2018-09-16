@@ -71,12 +71,12 @@ security:
             simple_preauth:
                 authenticator: apikey_authenticator
 
-        api_upload:
-            provider: chain_provider
-            pattern: ^.*/api/upload/upload.json
-            stateless: true
-            simple_preauth:
-                authenticator: apikey_authenticator
+#        api_upload:
+#            provider: chain_provider
+#            pattern: ^.*/api/upload/upload.json
+#            stateless: true
+#            simple_preauth:
+#                authenticator: apikey_authenticator
         api_submit:
             provider: chain_provider
             pattern: ^.*/api/gamejam/submit.json

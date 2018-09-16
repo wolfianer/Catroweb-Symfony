@@ -24,7 +24,11 @@ use Catrobat\AppBundle\Entity\GameJamRepository;
 use Catrobat\AppBundle\Exceptions\Upload\NoGameJamException;
 
 
-class UploadController
+
+// Remove
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+
+class UploadController extends Controller
 {
   private $usermanager;
 
@@ -121,8 +125,17 @@ class UploadController
       throw new InvalidChecksumException();
     }
 
-    $user = $this->tokenstorage->getToken()->getUser();
+    ///   ToDO REPLACE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    /**
+     * @var $userManager UserManager
+     * @var $user        User
+     */
+    $userManager = $this->get("usermanager");
+    $user = $userManager->find(2);
 
+    ///
+//    $user = $this->tokenstorage->getToken()->getUser();
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     $flavor = 'pocketcode';
     if ($user->getNolbUser())
     {

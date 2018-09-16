@@ -7,6 +7,8 @@ use Catrobat\AppBundle\Exceptions\InvalidCatrobatFileException;
 use Catrobat\AppBundle\Exceptions\InvalidStorageDirectoryException;
 use Catrobat\AppBundle\StatusCode;
 use Catrobat\AppBundle\Exceptions\Upload\InvalidArchiveException;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use WebSocket\Exception;
 
 class CatrobatFileExtractor
 {
