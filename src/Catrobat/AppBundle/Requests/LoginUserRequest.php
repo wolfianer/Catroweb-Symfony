@@ -9,8 +9,8 @@ class LoginUserRequest
 {
   public function __construct(Request $request)
   {
-    $this->username = $request->request->get('registrationUsername');
-    $this->password = $request->request->get('registrationPassword');
+    $this->username = $request->request->get('loginUsername');
+    $this->password = $request->request->get('loginPassword');
   }
 
   /**

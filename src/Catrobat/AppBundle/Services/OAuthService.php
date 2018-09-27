@@ -6,6 +6,7 @@ use Catrobat\AppBundle\Entity\User;
 use Catrobat\AppBundle\Entity\UserManager;
 use Catrobat\AppBundle\Requests\CreateOAuthUserRequest;
 use Catrobat\AppBundle\StatusCode;
+use Composer\XdebugHandler\Status;
 use DateTime;
 use Doctrine\ORM\EntityManager;
 use Facebook\Exceptions\FacebookResponseException;
@@ -57,14 +58,16 @@ class OAuthService
     if ($user && ($user->getFacebookUid() || $user->getGplusUid()))
     {
       $retArray['is_oauth_user'] = true;
+
     }
     else
     {
       $retArray['is_oauth_user'] = false;
     }
     $retArray['statusCode'] = StatusCode::OK;
+    $httpResponse = Response::HTTP_OK;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   public function checkEMailAvailable(Request $request)
@@ -82,7 +85,6 @@ class OAuthService
     if ($user)
     {
       $retArray['email_available'] = true;
-      $retArray['username'] = $user->getUsername();
     }
     else
     {
@@ -90,7 +92,7 @@ class OAuthService
     }
     $retArray['statusCode'] = StatusCode::OK;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, Response::HTTP_OK);
   }
 
   public function checkUserNameAvailable(Request $request)
@@ -118,7 +120,7 @@ class OAuthService
     }
     $retArray['statusCode'] = StatusCode::OK;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, Response::HTTP_OK);
   }
 
   public function checkFacebookServerTokenAvailable(Request $request)
@@ -127,7 +129,7 @@ class OAuthService
      * @var $userManager   UserManager
      * @var $facebook_user User
      */
-    $facebook_id = $request->request->get('id');
+    $facebook_id = $request->request->get('facebookUid');
 
     $userManager = $this->container->get("usermanager");
     $retArray = [];
@@ -147,7 +149,7 @@ class OAuthService
     }
     $retArray['statusCode'] = StatusCode::OK;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, Response::HTTP_OK);
   }
 
   public function exchangeFacebookTokenAction(Request $request)
@@ -171,12 +173,17 @@ class OAuthService
 
     // Ensure that this is no request forgery going on, and that the user
     // sending us this request is the user that was supposed to.
+
+    $retArray = [];
+
     if (!$request->request->has('mobile'))
     {
       if (!$sessionState || !$requestState || $sessionState != $requestState)
       {
-        //return new Response('Invalid state parameter', 401);
-        $retArray['sessionWarning'] = 'Warning: Invalid state parameter - This might be a Session Hijacking attempt!';
+        $retArray['statusCode'] = StatusCode::FB_SESSION_HIJACKING_PROBLEM;
+        $retArray['message'] = 'Warning: Invalid state parameter - This might be a Session Hijacking attempt!';
+
+        return JsonResponse::create($retArray, Response::HTTP_BAD_REQUEST);
       }
     }
 
@@ -186,7 +193,10 @@ class OAuthService
 
     if (!$client_secret || !$app_id || !$application_name)
     {
-      return new Response('Facebook app authentication data not found!', 401);
+      $retArray['statusCode'] = Response::HTTP_INTERNAL_SERVER_ERROR;
+      $retArray['message'] = 'Facebook app authentication data not found!';
+
+      return JsonResponse::create($retArray, Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
     $this->initializeFacebook();
@@ -208,12 +218,17 @@ class OAuthService
       $server_token = $graph_node->getField('access_token');
     } catch (FacebookResponseException $exception)
     {
-      return new Response(
-        "Graph API returned an error during token exchange for 'GET', '/oauth/access_token'", 401);
+      $retArray['statusCode'] = StatusCode::FB_GRAPH_ERROR;
+      $retArray['message'] = "Graph API returned an error during token exchange for 'GET', '/oauth/access_token'";
+
+      return JsonResponse::create($retArray, Response::HTTP_INTERNAL_SERVER_ERROR);
+
     } catch (\Exception $exception)
     {
-      return new Response(
-        "Error during token exchange for 'GET', '/oauth/access_token' with exception" . $exception, 401);
+      $retArray['statusCode'] = StatusCode::FB_GRAPH_ERROR;
+      $retArray['message'] = "Error during token exchange for 'GET', '/oauth/access_token' with exception" . $exception;
+
+      return JsonResponse::create($retArray, Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
     try
@@ -224,24 +239,37 @@ class OAuthService
       $facebookId_debug = $token_graph_node->getField('user_id');
     } catch (FacebookResponseException $e)
     {
-      return new Response(
-        "Graph API returned an error during token exchange for 'GET', '/debug_token'", 401);
+      $retArray['statusCode'] = StatusCode::FB_GRAPH_ERROR;
+      $retArray['message'] = "Graph API returned an error during token exchange for 'GET', '/debug_token'";
+
+      return JsonResponse::create($retArray, Response::HTTP_INTERNAL_SERVER_ERROR);
+
     } catch (FacebookSDKException $e)
     {
-      return new Response(
-        "Error during token exchange for 'GET', '/debug_token' with exception" . $e, 401);
+      $retArray['statusCode'] = StatusCode::FB_GRAPH_ERROR;
+      $retArray['message'] = "Error during token exchange for 'GET', '/debug_token' with exception" . $e;
+
+      return JsonResponse::create($retArray, Response::HTTP_INTERNAL_SERVER_ERROR);
+
     }
 
     // Make sure the token we got is for the intended user.
     if ($facebookId_debug != $facebookId)
     {
-      return new Response("Token's user ID doesn't match given user ID", 401);
+      $retArray['statusCode'] = StatusCode::TOKEN_ERROR;
+      $retArray['message'] = "Token's user ID doesn't match given user ID";
+
+      return JsonResponse::create($retArray, Response::HTTP_UNAUTHORIZED);
     }
 
     // Make sure the token we got is for our app.
     if ($app_id_debug != $app_id || $application_name_debug != $application_name)
     {
-      return new Response("Token's client ID or app name does not match app's.", 401);
+      $retArray['statusCode'] = StatusCode::TOKEN_ERROR;
+      $retArray['message'] = "Token's client ID or app name does not match app's.";
+
+      return JsonResponse::create($retArray, Response::HTTP_UNAUTHORIZED);
+
     }
 
     $userManager = $this->container->get("usermanager");
@@ -271,9 +299,10 @@ class OAuthService
     {
       $retArray['statusCode'] = 201;
       $retArray['answer'] = $this->trans("success.registration");
+      $httpResponse = Response::HTTP_CREATED;
     }
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   public function loginWithFacebookAction(Request $request)
@@ -303,6 +332,7 @@ class OAuthService
       $retArray['token'] = $fb_user->getUploadToken();
       $retArray['username'] = $fb_user->getUsername();
       $this->setLoginOAuthUserStatusCode($retArray);
+      $httpResponse = Response::HTTP_OK;
     }
     else
     {
@@ -313,10 +343,18 @@ class OAuthService
         $userManager->updateUser($user);
         $retArray['token'] = $user->getUploadToken();
         $retArray['username'] = $user->getUsername();
+        $retArray['statusCode'] = Response::HTTP_CREATED;
+        $httpResponse = Response::HTTP_CREATED;
+      }
+      else
+      {
+        $retArray['statusCode'] = StatusCode::USER_USERNAME_INVALID;
+        $retArray['answer'] = $this->trans("errors.username.not_exists");
+        $httpResponse = Response::HTTP_BAD_REQUEST;
       }
     }
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   public function getFacebookUserProfileInfo(Request $request)
@@ -369,15 +407,20 @@ class OAuthService
 
     $retArray['statusCode'] = StatusCode::OK;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, Response::HTTP_OK);
   }
 
   private function returnErrorCode($e)
   {
+    /**
+     * @var $e FacebookSDKException
+     */
+    $retArray['statusCode'] = Response::HTTP_INTERNAL_SERVER_ERROR;
     $retArray['error_code'] = $e->getCode();
     $retArray['error_description'] = $e->getMessage();
+    $httpResponse = Response::HTTP_INTERNAL_SERVER_ERROR;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   private function initializeFacebook()
@@ -423,9 +466,10 @@ class OAuthService
       // should not happen, but who knows
       $retArray['token_invalid'] = true;
       $retArray['reason'] = 'No Facebook User with given ID in database';
-      $retArray['statusCode'] = StatusCode::OK;
+      $retArray['statusCode'] = StatusCode::USER_RECOVERY_NOT_FOUND;
+      $httpResponse = Response::HTTP_INTERNAL_SERVER_ERROR;
 
-      return JsonResponse::create($retArray);
+      return JsonResponse::create($retArray, $httpResponse);
     }
 
     $app_token = $this->getFacebookAppToken();
@@ -461,6 +505,7 @@ class OAuthService
       $retArray['reason'] = 'There was an error during Facebook token check';
       $retArray['details'] = 'Error code: ' . $error->code . ', error subcode: ' . $error->subcode . ', error message: ' . $error->message;
       $retArray['statusCode'] = StatusCode::OK;
+      $httpResponse = Response::HTTP_I_AM_A_TEAPOT;
 
       return JsonResponse::create($retArray);
     }
@@ -479,8 +524,9 @@ class OAuthService
       $retArray['token_invalid'] = true;
       $retArray['reason'] = 'Token data does not match application data';
       $retArray['statusCode'] = StatusCode::OK;
+      $httpResponse = Response::HTTP_UNAUTHORIZED;
 
-      return JsonResponse::create($retArray);
+      return JsonResponse::create($retArray, $httpResponse);
     }
 
     if (!$is_valid)
@@ -488,8 +534,9 @@ class OAuthService
       $retArray['token_invalid'] = true;
       $retArray['reason'] = 'Token has been invalidated';
       $retArray['statusCode'] = StatusCode::OK;
+      $httpResponse = Response::HTTP_UNAUTHORIZED;
 
-      return JsonResponse::create($retArray);
+      return JsonResponse::create($retArray, $httpResponse);
     }
 
     $current_timestamp = new DateTime();
@@ -506,13 +553,15 @@ class OAuthService
         ', time to expiry (expires - current timestamp): ' .
         $time_to_expiry->format('%R %M months, %D days, %H hours, %I minutes, %S seconds') .
         ', expiration limit: ' . $limit;
+      $httpResponse = Response::HTTP_I_AM_A_TEAPOT;
 
-      return JsonResponse::create($retArray);
+      return JsonResponse::create($retArray, $httpResponse);
     }
     $retArray['token_invalid'] = false;
     $retArray['statusCode'] = StatusCode::OK;
+    $httpResponse = Response::HTTP_OK;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   private function checkFacebookServerAccessTokenValidity($token_to_check)
@@ -651,14 +700,16 @@ class OAuthService
       $retArray['token_available'] = true;
       $retArray['username'] = $google_user->getUsername();
       $retArray['email'] = $google_user->getEmail();
+      $retArray['statusCode'] = StatusCode::OK;
+      $httpResponse = Response::HTTP_NOT_FOUND;
     }
     else
     {
       $retArray['token_available'] = false;
+      $httpResponse = Response::HTTP_OK;
     }
-    $retArray['statusCode'] = StatusCode::OK;
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   public function exchangeGoogleCodeAction(Request $request)
@@ -676,20 +727,35 @@ class OAuthService
     $username = $request->request->get('username');
 
     $client = new Google_Client(['client_id' => $client_id]);  // Specify the CLIENT_ID of the app that accesses the backend
+
+
     $payload = $client->verifyIdToken($id_token);
     if ($payload)
     {
       $gPlusId = $payload['sub'];
       $gEmail = $payload['email'];
-      $gName = $payload['name'];
       $gLocale = $payload['locale'];
     }
     else
     {
-      return new Response('Token invalid', 777);
+      $retArray['statusCode'] = StatusCode::TOKEN_ERROR;
+      $retArray['message'] = 'Token invalid';
+      $http_status_code =  Response::HTTP_BAD_REQUEST;
+      return JsonResponse::create($retArray, $http_status_code);
     }
 
-    $userManager = $this->container->get("usermanager");
+    try
+    {
+      $userManager = $this->container->get("usermanager");
+    }
+    catch (\Exception $e)
+    {
+      $retArray['statusCode'] = Response::HTTP_INTERNAL_SERVER_ERROR;
+      $retArray['message'] = 'Container->get(...) failed';
+      $http_status_code =  Response::HTTP_INTERNAL_SERVER_ERROR;
+      return JsonResponse::create($retArray, $http_status_code);
+    }
+
     if ($gEmail)
     {
       $user = $userManager->findUserByUsernameOrEmail($gEmail);
@@ -705,6 +771,9 @@ class OAuthService
     if ($google_user)
     {
       $this->setGoogleTokens($userManager, $google_user, null, null, $id_token);
+      $retArray['statusCode'] = Response::HTTP_OK;
+      $retArray['message'] = "Google tokens set";
+      $http_status_code =  Response::HTTP_OK;
     }
     else
     {
@@ -712,131 +781,21 @@ class OAuthService
       {
         $this->connectGoogleUserToExistingUserAccount($userManager, $request, $retArray, $user, $gPlusId, $username, $gLocale);
         $this->setGoogleTokens($userManager, $user, null, null, $id_token);
+        $retArray['statusCode'] = Response::HTTP_OK;
+        $retArray['message'] = "Connected Google Account to existing user";
+        $http_status_code =  Response::HTTP_OK;
       }
       else
       {
         $this->registerGoogleUser($request, $userManager, $retArray, $gPlusId, $username, $gEmail, $gLocale,
           null, null, $id_token);
-        $retArray['statusCode'] = 201;
+        $retArray['statusCode'] = Response::HTTP_CREATED;
+        $retArray['message'] = "Creation Successful";
+        $http_status_code =  Response::HTTP_CREATED;
       }
     }
 
-//
-//        if (!array_key_exists('statusCode', $retArray) || !$retArray['statusCode'] == StatusCode::LOGIN_ERROR) {
-//            $retArray['statusCode'] = 201;
-//            $retArray['answer'] = $this->trans("success.registration");
-//        }
-
-
-//        $session = $request->getSession();
-//        $code = $request->request->get('code');
-//
-//        $gPlusId = $request->request->get('id');
-//        $google_username = $request->request->get('username');
-//        $google_mail = $request->request->get('email');
-//        $locale = $request->request->get('locale');
-//
-//        if (!$request->request->has('mobile')) {
-//            $sessionState = $session->get('_csrf/authenticate');
-//            $requestState = $request->request->get('state');
-//            // Ensure that this is no request forgery going on, and that the user
-//            // sending us this request is the user that was supposed to.
-//            if (!$sessionState || !$requestState || $sessionState != $requestState) {
-//                //return new Response('Invalid state parameter - Session Hijacking attempt?', 401);
-//                $retArray['sessionWarning'] = 'Warning: Invalid state parameter - This might be a Session Hijacking attempt!';
-//            }
-//        }
-//
-//        $application_name = $this->container->getParameter('application_name');
-//        $client_id = $this->container->getParameter('google_app_id');
-//        $client_secret = $this->container->getParameter('google_secret');
-//        $redirect_uri = 'postmessage';
-//
-//        if (!$client_secret || !$client_id || !$application_name) {
-//            return new Response('Google app authentication data not found!', 401);
-//        }
-
-//        $client = new Google_Client();
-//        $client->setApplicationName($application_name);
-//        $client->setClientId($client_id);
-//        $client->setClientSecret($client_secret);
-//        if (!$request->request->has('mobile')) {
-//            $client->setRedirectUri($redirect_uri);
-//        }
-//        $client->setScopes('https://www.googleapis.com/auth/userinfo.email');
-//
-//        $token = '';
-//        if ($code) {
-//            $client->authenticate($code);
-//            $token = json_decode($client->getAccessToken());
-//        }
-//
-//        if (!$token) {
-//            return new Response("Google Authentication failed.", 401);
-//        }
-//
-//        $reqUrl = 'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' . $token->access_token;
-//        $req = new Google_Http_Request($reqUrl);
-//
-//        $results = $client->execute($req);
-
-//        /*
-//         * TODO: update to newest G+ PHP API and enabled id token verification
-//         *
-//         */
-//        $id_token = $request->request->get('id_token');
-//        try {
-//            $ticket = $client->verifyIdToken($id_token);
-//            $retArray['id_token_attributes:'] = print_r($ticket->getAttributes(), true);
-//            $retArray['id_token_user_id'] = print_r($ticket->getUserId(), true);
-//        } catch (\Google_Auth_Exception $e) {
-//            return new Response("Invalid id token: " . $e->getMessage(), 401);
-//        }
-
-
-    // Make sure the token we got is for the intended user.
-
-//        if ($results['user_id'] != $gPlusId) {
-//            return new Response("Token's user ID doesn't match given user ID", 401);
-//        }
-//
-//        // Make sure the token we got is for our app.
-//        if ($results['audience'] != $client_id) {
-//            return new Response("Token's client ID does not match app's.", 401);
-//        }
-//
-//        $access_token = $token->access_token;
-//        $id_token = $token->id_token;
-//        $refresh_token = '';
-//        if (property_exists($token, 'refresh_token')) {
-//            $refresh_token = $token->refresh_token;
-//        }
-//
-//        // Store the token in the session for later use.
-//        // 'Succesfully connected with token: ' . print_r($token, true);
-//
-//        $userManager = $this->container->get("usermanager");
-//        $user = $userManager->findUserByEmail($google_mail);
-//        $google_user = $userManager->findUserBy(array(
-//            'gplusUid' => $gPlusId
-//        ));
-//        if ($google_user) {
-//            $this->setGoogleTokens($userManager, $google_user, $access_token, $refresh_token, $id_token);
-//        } else
-//            if ($user) {
-//                $this->connectGoogleUserToExistingUserAccount($userManager, $request, $retArray, $user, $gPlusId, $google_username, $locale);
-//                $this->setGoogleTokens($userManager, $user, $access_token, $refresh_token, $id_token);
-//            } else {
-//                $this->registerGoogleUser($request, $userManager, $retArray, $gPlusId, $google_username, $google_mail, $locale, $access_token, $refresh_token, $id_token);
-//                $retArray['statusCode'] = 201;
-//            }
-//
-//        if (!array_key_exists('statusCode', $retArray) || !$retArray['statusCode'] == StatusCode::LOGIN_ERROR) {
-//            $retArray['statusCode'] = 201;
-//            $retArray['answer'] = $this->trans("success.registration");
-//        }
-
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $http_status_code);
   }
 
   public function loginWithGoogleAction(Request $request)
@@ -866,6 +825,7 @@ class OAuthService
       $retArray['token'] = $google_user->getUploadToken();
       $retArray['username'] = $google_user->getUsername();
       $this->setLoginOAuthUserStatusCode($retArray);
+      $httpResponse = Response::HTTP_OK;
     }
     else
     {
@@ -876,10 +836,17 @@ class OAuthService
         $userManager->updateUser($user);
         $retArray['token'] = $user->getUploadToken();
         $retArray['username'] = $user->getUsername();
+        $httpResponse = Response::HTTP_CREATED;
+      }
+      else
+      {
+        $retArray['statusCode'] = StatusCode::USER_USERNAME_INVALID;
+        $retArray['message'] = $this->trans("errors.username.not_exists");
+        $httpResponse = Response::HTTP_NOT_FOUND;
       }
     }
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   public function getGoogleUserProfileInfo(Request $request)
@@ -904,17 +871,21 @@ class OAuthService
       $plus = new \Google_Service_Plus($client);
       $person = $plus->people->get($google_id);
 
+      $retArray['statusCode'] = Response::HTTP_OK;
       $retArray['ID'] = $person->getId();
       $retArray['displayName'] = $person->getDisplayName();
       $retArray['imageUrl'] = $person->getImage()->getUrl();
       $retArray['profileUrl'] = $person->getUrl();
+      $httpResponse = Response::HTTP_OK;
     }
     else
     {
-      $retArray['error'] = 'invalid id';
+      $retArray['statusCode'] = Response::HTTP_OK;
+      $retArray['message'] = 'invalid id';
+      $httpResponse = Response::HTTP_BAD_REQUEST;
     }
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   private function setGoogleTokens($userManager, $user, $access_token, $refresh_token, $id_token)

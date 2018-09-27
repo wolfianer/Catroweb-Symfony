@@ -76,4 +76,8 @@ class StatusCode
 
   const FB_POST_ERROR = 790;
   const FB_DELETE_ERROR = 791;
+  const FB_SESSION_HIJACKING_PROBLEM = 792;
+  const FB_GRAPH_ERROR = 793;
+
+  const TOKEN_ERROR = 800;
 }

@@ -5,7 +5,11 @@ namespace Catrobat\AppBundle\Controller\Api;
 //use Assetic\Exception;
 use Catrobat\AppBundle\Entity\User;
 use Catrobat\AppBundle\Entity\UserLDAPManager;
+use Catrobat\AppBundle\Services\OAuthService;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\Validator;
 use Catrobat\AppBundle\Entity\UserManager;
 use Catrobat\AppBundle\Services\TokenGenerator;
@@ -19,12 +23,65 @@ use Catrobat\AppBundle\Requests\CreateOAuthUserRequest;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Catrobat\AppBundle\Security\UserAuthenticator;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+use OpenApi\Annotations as OA;
 
+/**
+  @OA\Tag(
+   *     name="Security",
+   *     description="Everything about your security endpoints",
+   * )
+ **/
 class SecurityController extends Controller
 {
   /**
    * @Route("/api/checkToken/check.json", name="catrobat_api_check_token", defaults={"_format": "json"},
    *                                      methods={"POST"})
+   */
+
+  /**
+   * @OA\Post(
+   *     path="/api/checkToken/check.json",
+   *     tags={"Security"},
+   *     summary="Check Token",
+   *     description="Checks if a sent token is okay.",
+   *     operationId="checkTokenAction",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="username",
+   *                   description="Name of the user.",
+   *                   type="string",
+   *               ),
+   *               @OA\Property(
+   *                   property="token",
+   *                   description="Upload Token of the user",
+   *                   type="string",
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="successful operation",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=401,
+   *         description="Authorization error",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function checkTokenAction()
   {
@@ -35,102 +92,75 @@ class SecurityController extends Controller
     ]);
   }
 
-  /*
-   * loginOrRegisterAction is DEPRECATED!!
-   */
-  /**
-   * @Route("/api/loginOrRegister/loginOrRegister.json", name="catrobat_api_login_or_register", defaults={"_format":
-   *                                                     "json"}, methods={"POST"})
-   *
-   * @deprecated
-   *
-   */
-  public function loginOrRegisterAction(Request $request)
-  {
-    /**
-     * @var $userManager UserManager
-     * @var $user        User
-     */
-    $userManager = $this->get('usermanager');
-    $tokenGenerator = $this->get("tokengenerator");
-    $validator = $this->get('validator');
-
-    $retArray = [];
-
-    $this->signInLdapUser($request, $retArray);
-    if (array_key_exists('statusCode', $retArray) && ($retArray['statusCode'] === StatusCode::OK || $retArray['statusCode'] === StatusCode::LOGIN_ERROR))
-    {
-      return JsonResponse::create($retArray);
-    }
-
-    $create_request = new CreateUserRequest($request);
-
-    $violations = $validator->validate($create_request);
-    foreach ($violations as $violation)
-    {
-      $retArray['statusCode'] = StatusCode::REGISTRATION_ERROR;
-      switch ($violation->getMessageTemplate())
-      {
-        case 'errors.password.short':
-          $retArray['statusCode'] = StatusCode::USER_PASSWORD_TOO_SHORT;
-          break;
-        case 'errors.email.invalid':
-          $retArray['statusCode'] = StatusCode::USER_EMAIL_INVALID;
-          break;
-      }
-      $retArray['answer'] = $this->trans($violation->getMessageTemplate(), $violation->getParameters());
-      break;
-    }
-
-    if (count($violations) == 0)
-    {
-      if ($userManager->findUserByEmail($create_request->mail) != null)
-      {
-        $retArray['statusCode'] = StatusCode::USER_ADD_EMAIL_EXISTS;
-        $retArray['answer'] = $this->trans('errors.email.exists');
-      }
-      else
-      {
-        $user = $userManager->createUser();
-        $user->setUsername($create_request->username);
-        $user->setEmail($create_request->mail);
-        $user->setPlainPassword($create_request->password);
-        $user->setEnabled(true);
-        $user->setUploadToken($tokenGenerator->generateToken());
-        $user->setCountry($create_request->country);
-
-        $violations = $validator->validate($user);
-        if (count($violations) > 0)
-        {
-          $retArray['statusCode'] = StatusCode::LOGIN_ERROR;
-          $retArray['answer'] = $this->trans('errors.login');
-        }
-        else
-        {
-          $userManager->updateUser($user);
-          $retArray['statusCode'] = 201;
-          $retArray['answer'] = $this->trans('success.registration');
-          $retArray['token'] = $user->getUploadToken();
-        }
-      }
-    }
-    $retArray['preHeaderMessages'] = '';
-
-    return JsonResponse::create($retArray);
-  }
-
   /**
    * @Route("/api/register/Register.json", name="catrobat_api_register", options={"expose"=true}, defaults={"_format":
    *                                       "json"}, methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   *
+   * @OA\Post(
+   *     path="/api/register/Register.json",
+   *     tags={"Security"},
+   *     summary="Register new User",
+   *     description="Registers a new PocketCode user.",
+   *     operationId="registerNativeUser",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="registrationUsername",
+   *                   description="Name of the user.",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="registrationPassword",
+   *                   description="Password of the user.",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="registrationEmail",
+   *                   description="Email address of the user.",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=201,
+   *         description="Registration successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=400,
+   *         description="Authorization error (user mistake)",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function registerNativeUser(Request $request)
   {
     /**
-     * @var $userManager UserManager
-     * @var $user        User
+     * @var $user_manager          UserManager
+     * @var $user                  User
+     * @var $token_generator       TokenGenerator
+     * @var $validator             Validator\ValidatorInterface
+     * @var $violations            ConstraintViolation
      */
-    $userManager = $this->get("usermanager");
-    $tokenGenerator = $this->get("tokengenerator");
+    $user_manager = $this->get("usermanager");
+    $token_generator = $this->get("tokengenerator");
     $validator = $this->get("validator");
 
     $retArray = [];
@@ -142,8 +172,20 @@ class SecurityController extends Controller
       $retArray['statusCode'] = StatusCode::REGISTRATION_ERROR;
       switch ($violation->getMessageTemplate())
       {
+        case 'errors.username.blank':
+          $retArray['statusCode'] = StatusCode::USER_USERNAME_MISSING;
+          break;
+        case 'errors.username.invalid':
+          $retArray['statusCode'] = StatusCode::USER_USERNAME_INVALID;
+          break;
+        case 'errors.password.blank':
+          $retArray['statusCode'] = StatusCode::USER_PASSWORD_MISSING;
+          break;
         case 'errors.password.short':
           $retArray['statusCode'] = StatusCode::USER_PASSWORD_TOO_SHORT;
+          break;
+        case 'errors.email.blank':
+          $retArray['statusCode'] = StatusCode::USER_EMAIL_MISSING;
           break;
         case 'errors.email.invalid':
           $retArray['statusCode'] = StatusCode::USER_EMAIL_INVALID;
@@ -153,55 +195,107 @@ class SecurityController extends Controller
       break;
     }
 
-    if (count($violations) == 0)
+    $httpResponse = Response::HTTP_BAD_REQUEST;
+    if (count($violations) === 0)
     {
-      if ($userManager->findUserByEmail($create_request->mail) != null)
+      if ($user_manager->findUserByEmail($create_request->mail) !== null)
       {
         $retArray['statusCode'] = StatusCode::USER_ADD_EMAIL_EXISTS;
         $retArray['answer'] = $this->trans("errors.email.exists");
       }
       else
       {
-        if ($userManager->findUserByUsername($create_request->username) != null)
+        if ($user_manager->findUserByUsername($create_request->username) !== null)
         {
           $retArray['statusCode'] = StatusCode::USER_ADD_USERNAME_EXISTS;
           $retArray['answer'] = $this->trans("errors.username.exists");
         }
         else
         {
-          $user = $userManager->createUser();
+          $user = $user_manager->createUser();
           $user->setUsername($create_request->username);
           $user->setEmail($create_request->mail);
           $user->setPlainPassword($create_request->password);
           $user->setEnabled(true);
-          $user->setUploadToken($tokenGenerator->generateToken());
-          $user->setCountry($create_request->country);
+          $user->setUploadToken($token_generator->generateToken());
+          $user_manager->updateUser($user);
 
-          $userManager->updateUser($user);
-          $retArray['statusCode'] = 201;
+          $retArray['statusCode'] = Response::HTTP_CREATED;
           $retArray['answer'] = $this->trans("success.registration");
           $retArray['token'] = $user->getUploadToken();
+          $httpResponse = Response::HTTP_CREATED;
         }
       }
     }
-    $retArray['preHeaderMessages'] = "";
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   /**
    * @Route("/api/login/Login.json", name="catrobat_api_login", options={"expose"=true}, defaults={"_format": "json"},
    *                                 methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   *
+   * @OA\Post(
+   *     path="/api/login/Login.json",
+   *     tags={"Security"},
+   *     summary="To log in a user",
+   *     description="Log in a user",
+   *     operationId="loginNativeUser",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="loginUsername",
+   *                   description="Name of the user.",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="loginPassword",
+   *                   description="Password of the user.",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Login successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/LoginModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=400,
+   *         description="Authorization error (user mistake)",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function loginNativeUser(Request $request)
   {
     /**
-     * @var $userManager UserManager
-     * @var $user        User
+     * @var $user_manager         UserManager
+     * @var $user                 User
+     * @var $token_generator      TokenGenerator
+     * @var $validator            Validator\ValidatorInterface
+     * @var $violations           ConstraintViolation
      */
 
-    $userManager = $this->get("usermanager");
-    $tokenGenerator = $this->get("tokengenerator");
+    $user_manager = $this->get("usermanager");
+    $token_generator = $this->get("tokengenerator");
     $validator = $this->get("validator");
     $retArray = [];
 
@@ -212,11 +306,14 @@ class SecurityController extends Controller
       $retArray['statusCode'] = StatusCode::LOGIN_ERROR;
       switch ($violation->getMessageTemplate())
       {
+        case 'errors.password.blank':
+          $retArray['statusCode'] = StatusCode::USER_PASSWORD_MISSING;
+          break;
         case 'errors.password.short':
           $retArray['statusCode'] = StatusCode::USER_PASSWORD_TOO_SHORT;
           break;
-        case 'errors.email.invalid':
-          $retArray['statusCode'] = StatusCode::USER_EMAIL_INVALID;
+        case 'errors.username.blank':
+          $retArray['statusCode'] = StatusCode::USER_USERNAME_MISSING;
           break;
       }
       $retArray['answer'] = $this->trans($violation->getMessageTemplate(), $violation->getParameters());
@@ -225,94 +322,117 @@ class SecurityController extends Controller
 
     if (count($violations) > 0)
     {
-      $retArray['preHeaderMessages'] = "";
+      $httpResponse = Response::HTTP_BAD_REQUEST;
 
-      return JsonResponse::create($retArray);
+      return JsonResponse::create($retArray, $httpResponse);
     }
 
-    if (count($violations) == 0)
+    if (count($violations) === 0)
     {
-      $username = $request->request->get('registrationUsername');
-      $password = $request->request->get('registrationPassword');
+      $username = $request->request->get('loginUsername');
+      $password = $request->request->get('loginPassword');
 
-      $user = $userManager->findUserByUsername($username);
+      $user = $user_manager->findUserByUsername($username);
 
       if (!$user)
       {
-        $this->signInLdapUser($request, $retArray);
-        if (array_key_exists('statusCode', $retArray) && ($retArray['statusCode'] === StatusCode::OK || $retArray['statusCode'] === StatusCode::LOGIN_ERROR))
-        {
-          return JsonResponse::create($retArray);
-        }
-        $retArray['statusCode'] = StatusCode::USER_USERNAME_INVALID;
-        $retArray['answer'] = $this->trans('errors.username.not_exists');
+        return $this->signInLdapUser($request, $retArray);
       }
       else
       {
         $factory = $this->get('security.encoder_factory');
         $encoder = $factory->getEncoder($user);
-        $correct_pass = $userManager->isPasswordValid($user, $password, $encoder);
-        $dd = null;
+        $correct_pass = $user_manager->isPasswordValid($user, $password, $encoder);
         if ($correct_pass)
         {
           $retArray['statusCode'] = StatusCode::OK;
-          $user->setUploadToken($tokenGenerator->generateToken());
+          $user->setUploadToken($token_generator->generateToken());
           $retArray['token'] = $user->getUploadToken();
           $retArray['email'] = $user->getEmail();
           $retArray['nolbUser'] = $user->getNolbUser();
-          $userManager->updateUser($user);
+          $user_manager->updateUser($user);
         }
         else
         {
-          $this->signInLdapUser($request, $retArray);
-          if (array_key_exists('statusCode', $retArray) && ($retArray['statusCode'] === StatusCode::OK || $retArray['statusCode'] === StatusCode::LOGIN_ERROR))
-          {
-            return JsonResponse::create($retArray);
-          }
-          $retArray['statusCode'] = StatusCode::LOGIN_ERROR;
-          $retArray['answer'] = $this->trans("errors.login");
+          return $this->signInLdapUser($request, $retArray);
         }
       }
     }
-
-    $retArray['preHeaderMessages'] = "";
 
     return JsonResponse::create($retArray);
   }
 
   private function signInLdapUser($request, &$retArray)
   {
-    /* @var $authenticator UserAuthenticator */
+    /**
+     * @var $authenticator UserAuthenticator
+     */
     $authenticator = $this->get('user_authenticator');
     $token = null;
-    $username = $request->request->get('registrationUsername');
+    $username = $request->request->get('loginUsername');
 
     try
     {
-      $token = $authenticator->authenticate($username, $request->request->get('registrationPassword'));
+      $token = $authenticator->authenticate($username, $request->request->get('loginPassword'));
       $retArray['statusCode'] = StatusCode::OK;
       $retArray['token'] = $token->getUser()->getUploadToken();
-      $retArray['preHeaderMessages'] = '';
+      $httpResponse = Response::HTTP_OK;
 
-      return JsonResponse::create($retArray);
     } catch (UsernameNotFoundException $exception)
     {
       $user = null;
+      $retArray['statusCode'] = StatusCode::LOGIN_ERROR;
+      $retArray['answer'] = $this->trans('errors.login');
+      $httpResponse = Response::HTTP_BAD_REQUEST;
     } catch (AuthenticationException $exception)
     {
       $retArray['statusCode'] = StatusCode::LOGIN_ERROR;
       $retArray['answer'] = $this->trans('errors.login');
-      $retArray['preHeaderMessages'] = '';
-
-      return JsonResponse::create($retArray);
+      $httpResponse = Response::HTTP_BAD_REQUEST;
     }
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, $httpResponse);
   }
 
   /**
    * @Route("/api/IsOAuthUser/IsOAuthUser.json", name="catrobat_is_oauth_user", options={"expose"=true},
    *                                             defaults={"_format": "json"}, methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   *
+   * @OA\Post(
+   *     path="/api/IsOAuthUser/IsOAuthUser.json",
+   *     tags={"Security"},
+   *     summary="Check if user is an OAuthUser",
+   *     description="Check if user is an OAuthUser",
+   *     operationId="isOAuthUser",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="username_email",
+   *                   description="Name or email of the user",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Response successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/IsOAuthModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function isOAuthUser(Request $request)
   {
@@ -323,6 +443,42 @@ class SecurityController extends Controller
    * @Route("/api/EMailAvailable/EMailAvailable.json", name="catrobat_oauth_login_email_available",
    *                                                   options={"expose"=true}, defaults={"_format": "json"},
    *                                                   methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   *
+   * @OA\Post(
+   *     path="/api/EMailAvailable/EMailAvailable.json",
+   *     tags={"Security"},
+   *     summary="Check if an email is already in use.",
+   *     description="Check if an email is already in use.",
+   *     operationId="checkEMailAvailable",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="email",
+   *                   description="Email of the user",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/EMailAvailabilityModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function checkEMailAvailable(Request $request)
   {
@@ -333,6 +489,42 @@ class SecurityController extends Controller
    * @Route("/api/UsernameAvailable/UsernameAvailable.json", name="catrobat_oauth_login_username_available",
    *                                                         options={"expose"=true}, defaults={"_format": "json"},
    *                                                         methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   *
+   * @OA\Post(
+   *     path="/api/UsernameAvailable/UsernameAvailable.json",
+   *     tags={"Security"},
+   *     summary="Check if a username is available.",
+   *     description="Check if a username is available.",
+   *     operationId="checkUserNameAvailable",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="username",
+   *                   description="Username to be checked!",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/UsernameAvailabilityModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function checkUserNameAvailable(Request $request)
   {
@@ -344,6 +536,41 @@ class SecurityController extends Controller
    *                                                                               options={"expose"=true},
    *                                                                               defaults={"_format": "json"},
    *                                                                               methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/FacebookServerTokenAvailable/FacebookServerTokenAvailable.json",
+   *     tags={"Security"},
+   *     summary="Check if we have a FacebookUID available.",
+   *     description="Check if we have a FacebookUID available.",
+   *     operationId="checkFacebookServerTokenAvailable",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="facebookUid",
+   *                   description="FacebookUID to be checked!",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/FacebookServerTokenInfoModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function checkFacebookServerTokenAvailable(Request $request)
   {
@@ -354,6 +581,90 @@ class SecurityController extends Controller
    * @Route("/api/exchangeFacebookToken/exchangeFacebookToken.json", name="catrobat_oauth_login_facebook_token",
    *                                                                 options={"expose"=true}, defaults={"_format":
    *                                                                 "json"}, methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/exchangeFacebookToken/exchangeFacebookToken.json",
+   *     tags={"Security"},
+   *     summary="Check if token exchnage with FB works",
+   *     description="Check if token exchnage with FB works",
+   *     operationId="exchangeFacebookTokenAction",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="client_token",
+   *                   description="Token of the user.",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="state",
+   *                   description="Request state.",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="username",
+   *                   description="Name of the user to be logged in!",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="id",
+   *                   description="facebookUID",
+   *                   type="integer"
+   *               ),
+   *               @OA\Property(
+   *                   property="email",
+   *                   description="Email of the user",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="locale",
+   *                   description="locale of the user",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=201,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *   @OA\Response(
+   *         response=400,
+   *         description="Bad Request!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *   @OA\Response(
+   *         response=401,
+   *         description="Authorization Error!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *   @OA\Response(
+   *         response=500,
+   *         description="Internal Server Error",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function exchangeFacebookTokenAction(Request $request)
   {
@@ -364,6 +675,72 @@ class SecurityController extends Controller
    * @Route("/api/loginWithFacebook/loginWithFacebook.json", name="catrobat_oauth_login_facebook",
    *                                                         options={"expose"=true}, defaults={"_format": "json"},
    *                                                         methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/loginWithFacebook/loginWithFacebook.json",
+   *     tags={"Security"},
+   *     summary="Logs in a Facebook user and gives back an upload token.",
+   *     description="Check if the user exists and if it is a FB user and returns the UploadToken for the user",
+   *     operationId="checkFacebookServerTokenAvailable",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="username",
+   *                   description="Name of the user to be logged in!",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="id",
+   *                   description="facebookUID",
+   *                   type="integer"
+   *               ),
+   *               @OA\Property(
+   *                   property="email",
+   *                   description="Email of the user",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="locale",
+   *                   description="locale of the user",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/LoginFacebookModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=201,
+   *         description="User connection successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/LoginFacebookModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=400,
+   *         description="Bad Request",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function loginWithFacebookAction(Request $request)
   {
@@ -374,6 +751,54 @@ class SecurityController extends Controller
    * @Route("/api/getFacebookUserInfo/getFacebookUserInfo.json", name="catrobat_facebook_userinfo",
    *                                                             options={"expose"=true}, defaults={"_format": "json"},
    *                                                             methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/getFacebookUserInfo/getFacebookUserInfo.json",
+   *     tags={"Security"},
+   *     summary="Gives back the profile information for a FB user.",
+   *     description="Gives back the profile information for a FB user.",
+   *     operationId="getFacebookUserProfileInfo",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="id",
+   *                   description="facebookUid",
+   *                   type="string",
+   *               ),
+   *               @OA\Property(
+   *                   property="token",
+   *                   description="Already known facebook access token",
+   *                   type="string"
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/FacebookProfileModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=500,
+   *         description="Internal Server Error",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/InternalErrorModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function getFacebookUserProfileInfo(Request $request)
   {
@@ -385,6 +810,65 @@ class SecurityController extends Controller
    *                                                                                       options={"expose"=true},
    *                                                                                       defaults={"_format":
    *                                                                                       "json"}, methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/checkFacebookServerTokenValidity/checkFacebookServerTokenValidity.json",
+   *     tags={"Security"},
+   *     summary="Validate if a token is good or not.",
+   *     description="Gives you information if a token is valid or not. In some cases also gives you details why it is not valid.",
+   *     operationId="getFacebookUserProfileInfo",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="id",
+   *                   description="facebookUid",
+   *                   type="string",
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/FacebookTokenModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=401,
+   *         description="Token Authorization Error!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/FacebookTokenErrorModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=418,
+   *         description="Token Error, find details in error!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/FacebookTokenErrorDetailsModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=500,
+   *         description="Internal Server Error",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/FacebookTokenErrorModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function isFacebookServerAccessTokenValid(Request $request)
   {
@@ -396,6 +880,49 @@ class SecurityController extends Controller
    *                                                                           options={"expose"=true},
    *                                                                           defaults={"_format": "json"},
    *                                                                           methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/GoogleServerTokenAvailable/GoogleServerTokenAvailable.json",
+   *     tags={"Security"},
+   *     summary="Checks if given ID is GPlus ID.",
+   *     description="Checks if the given ID correlates to a user. If so gives more info about the user.",
+   *     operationId="checkGoogleServerTokenAvailable",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="id",
+   *                   description="gplusUid",
+   *                   type="string",
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/GoogleTokenDetailModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=404,
+   *         description="Token not assoicated with any user.",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/GoogleTokenModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function checkGoogleServerTokenAvailable(Request $request)
   {
@@ -406,6 +933,78 @@ class SecurityController extends Controller
    * @Route("/api/exchangeGoogleCode/exchangeGoogleCode.json", name="catrobat_oauth_login_google_code",
    *                                                           options={"expose"=true}, defaults={"_format": "json"},
    *                                                           methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/exchangeGoogleCodeAction/exchangeGoogleCodeAction.json",
+   *     tags={"Security"},
+   *     summary="Check if token exchange with Google works",
+   *     description="Check if token exchange with Google works",
+   *     operationId="exchangeGoogleCodeAction",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="id_token",
+   *                   description="Token of the user.",
+   *                   type="string"
+   *               ),
+   *               @OA\Property(
+   *                   property="'username'",
+   *                   description="The name of the user",
+   *                   type="string"
+   *               )
+   *           )
+   *       )
+   *   ),
+   *    @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=201,
+   *         description="Creation successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *   @OA\Response(
+   *         response=400,
+   *         description="Bad Request!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *   @OA\Response(
+   *         response=401,
+   *         description="Authorization Error!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *   @OA\Response(
+   *         response=500,
+   *         description="Internal Server Error",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function exchangeGoogleCodeAction(Request $request)
   {
@@ -415,6 +1014,72 @@ class SecurityController extends Controller
   /**
    * @Route("/api/loginWithGoogle/loginWithGoogle.json", name="catrobat_oauth_login_google", options={"expose"=true},
    *                                                     defaults={"_format": "json"}, methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/loginWithGoogle/loginWithGoogle.json",
+   *     tags={"Security"},
+   *     summary="Log in a user via G+",
+   *     description="Log in a user via G+. If the user was not registered via G+ the account will be connected to it.",
+   *     operationId="loginWithGoogleAction",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="id",
+   *                   description="gplusUid",
+   *                   type="string",
+   *               ),
+   *               @OA\Property(
+   *                   property="username",
+   *                   description="Name of the user",
+   *                   type="string",
+   *               ),
+   *               @OA\Property(
+   *                   property="email",
+   *                   description="Email of the user",
+   *                   type="string",
+   *               ),
+   *               @OA\Property(
+   *                   property="locale",
+   *                   description="Locale of the user",
+   *                   type="string",
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/GoogleLoginModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=201,
+   *         description="Request successful and account connected",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/GoogleLoginModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=404,
+   *         description="Token not assoicated with any user.",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function loginWithGoogleAction(Request $request)
   {
@@ -424,6 +1089,49 @@ class SecurityController extends Controller
   /**
    * @Route("/api/getGoogleUserInfo/getGoogleUserInfo.json", name="catrobat_google_userinfo", options={"expose"=true},
    *                                                         defaults={"_format": "json"}, methods={"POST"})
+   *
+   * @param $request Request
+   *
+   * @return JsonResponse
+   *
+   * @OA\Post(
+   *     path="/api/getGoogleUserInfo/getGoogleUserInfo.json",
+   *     tags={"Security"},
+   *     summary="Get G+ Profile",
+   *     description="Get the profile Information of a G+ User",
+   *     operationId="loginWithGoogleAction",
+   *   @OA\RequestBody(
+   *       required=true,
+   *       @OA\MediaType(
+   *           mediaType="multipart/form-data",
+   *           @OA\Schema(
+   *               type="object",
+   *               @OA\Property(
+   *                   property="id",
+   *                   description="gplusUid",
+   *                   type="string",
+   *               ),
+   *           )
+   *       )
+   *   ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/GoogleProfileModel")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=400,
+   *         description="Invalid ID.",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/MessageModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function getGoogleUserProfileInfo(Request $request)
   {
@@ -443,19 +1151,58 @@ class SecurityController extends Controller
    * @Route("/api/getFacebookAppId/getFacebookAppId.json", name="catrobat_oauth_login_get_facebook_appid",
    *                                                       options={"expose"=true}, defaults={"_format": "json"},
    *                                                       methods={"GET"})
+   *
+   * @return JsonResponse
+   *
+   * @OA\Get(
+   *     path="/api/getFacebookAppId/getFacebookAppId.json",
+   *     tags={"Security"},
+   *     summary="Get PocketCode Web Facebook APP ID",
+   *     description="Get PocketCode Web Facebook APP ID",
+   *     operationId="getFacebookAppId",
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/FacebookAppIDModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function getFacebookAppId()
   {
     $retArray = [];
+    $retArray['statusCode'] = Response::HTTP_OK;
     $retArray['fb_appid'] = $this->container->getParameter('facebook_app_id');
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, Response::HTTP_OK);
   }
 
   /**
    * @Route("/api/getGoogleAppId/getGoogleAppId.json", name="catrobat_oauth_login_get_google_appid",
    *                                                   options={"expose"=true}, defaults={"_format": "json"},
    *                                                   methods={"GET"})
+   *
+   * @return JsonResponse
+   *
+   * @OA\Get(
+   *     path="/api/getGoogleAppId/getGoogleAppId.json",
+   *     tags={"Security"},
+   *     summary="Get PocketCode Web Google APP ID",
+   *     description="Get PocketCode Web Google APP ID",
+   *     operationId="getGoogleAppId",
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/GoogleAppIDModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function getGoogleAppId()
   {
@@ -469,13 +1216,33 @@ class SecurityController extends Controller
    * @Route("/api/generateCsrfToken/generateCsrfToken.json", name="catrobat_oauth_register_get_csrftoken",
    *                                                         options={"expose"=true}, defaults={"_format": "json"},
    *                                                         methods={"GET"})
+   *
+   * @return JsonResponse
+   *
+   * @OA\Get(
+   *     path="/api/generateCsrfToken/generateCsrfToken.json",
+   *     tags={"Security"},
+   *     summary="Get CSRF Token",
+   *     description="Get CSRF Token",
+   *     operationId="generateCsrfToken",
+   *     @OA\Response(
+   *         response=200,
+   *         description="Request successful!",
+   *         @OA\JsonContent(
+   *            type="array",
+   *            @OA\Items(ref="#/components/schemas/CSRFTokenModel")
+   *         )
+   *     ),
+   *     deprecated=false
+   * )
    */
   public function generateCsrfToken()
   {
     $retArray = [];
+    $retArray['statusCode'] = Response::HTTP_OK;
     $retArray['csrf_token'] = $this->container->get('security.csrf.token_manager')->getToken('authenticate')->getValue();
 
-    return JsonResponse::create($retArray);
+    return JsonResponse::create($retArray, Response::HTTP_OK);
   }
 
   /**
@@ -488,8 +1255,12 @@ class SecurityController extends Controller
     return $this->getOAuthService()->deleteOAuthTestUserAccounts();
   }
 
+  /**
+   * @return object
+   */
   private function getOAuthService()
   {
+
     return $this->get("oauth_service");
   }
 
