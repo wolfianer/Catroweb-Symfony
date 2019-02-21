@@ -3,6 +3,7 @@
 namespace Catrobat\AppBundle\Entity;
 
 use Catrobat\AppBundle\Ldap\UserHydrator;
+use Catrobat\AppBundle\Services\TokenGenerator;
 use FR3D\LdapBundle\Driver\LdapDriverException;
 use FR3D\LdapBundle\Ldap\LdapManager;
 use FR3D\LdapBundle\Driver\LdapDriverInterface;
@@ -28,9 +29,14 @@ class UserLDAPManager extends LdapManager
   protected $group_filter;
 
   /**
-   * @var
+   * @var TokenGenerator
    */
-  protected $tokengenerator;
+  protected $tokenGenerator;
+
+  /**
+   * @var UserManager
+   */
+  protected $userManager;
 
   /**
    * @var Logger
@@ -41,22 +47,28 @@ class UserLDAPManager extends LdapManager
    * UserLDAPManager constructor.
    *
    * @param LdapDriverInterface $driver
-   * @param UserHydrator        $userManager
+   * @param UserHydrator        $userHydrator
+   * @param UserManager         $userManager
    * @param array               $params
    * @param                     $role_mappings
    * @param                     $group_filter
-   * @param                     $tokengenerator
+   * @param                     $tokenGenerator
    * @param Logger              $logger
    */
-  public function __construct(LdapDriverInterface $driver, UserHydrator $userManager,
-                              array $params, $role_mappings, $group_filter, $tokengenerator, Logger $logger)
+  public function __construct(LdapDriverInterface $driver,
+                              UserHydrator $userHydrator,
+                              UserManager $userManager,
+                              array $params, $role_mappings, $group_filter,
+                              TokenGenerator $tokenGenerator, Logger $logger)
   {
+
+    $this->userManager = $userManager;
     $this->role_mappings = $role_mappings;
     $this->group_filter = $group_filter;
     $this->logger = $logger;
-    $this->tokengenerator = $tokengenerator;
+    $this->tokenGenerator = $tokenGenerator;
 
-    parent::__construct($driver, $userManager, $params);
+    parent::__construct($driver, $userHydrator, $params);
   }
 
   /**
@@ -67,6 +79,9 @@ class UserLDAPManager extends LdapManager
    */
   public function findUserBy(array $criteria)
   {
+    /**
+     * @var $user User
+     */
     try
     {
       $filter = $this->buildFilter($criteria);
@@ -82,11 +97,7 @@ class UserLDAPManager extends LdapManager
       }
 
       // same Email-Address already in system?
-      /**
-       * @var UserManager $usermanager
-       */
-      $usermanager = $this->userManager;
-      $sameEmailUser = $usermanager->findOneBy([
+      $sameEmailUser = $this->userManager->findOneBy([
         "email" => $entries[0]['mail'],
       ]);
       if ($sameEmailUser != null)
@@ -95,13 +106,13 @@ class UserLDAPManager extends LdapManager
         {
           $sameEmailUser->setDn($entries[0]['dn']);
         }
-        $usermanager->updateUser($sameEmailUser);
+        $this->userManager->updateUser($sameEmailUser);
 
         return $sameEmailUser;
       }
 
-      $user = $this->userManager->createUser();
-      $this->hydrate($user, $entries[0]);
+      $user = $this->hydrator->hydrate($entries[0]);
+      $user->setUploadToken($this->tokenGenerator->generateToken());
 
       return $user;
     } catch (LdapDriverException $e)
@@ -112,9 +123,10 @@ class UserLDAPManager extends LdapManager
     }
   }
 
+
   /**
-   * @param UserInterface $user
-   * @param               $password
+   * @param UserInterface|User  $user
+   * @param                     $password
    *
    * @return bool
    */
@@ -154,15 +166,5 @@ class UserLDAPManager extends LdapManager
     }
 
     return $binding;
-  }
-
-  /**
-   * @param UserInterface $user
-   * @param array         $entry
-   */
-  protected function hydrate(UserInterface $user, array $entry)
-  {
-    parent::hydrate($user, $entry);
-    $user->setUploadToken($this->tokengenerator->generateToken());
   }
 }

@@ -188,7 +188,7 @@ class FeatureContext extends MinkContext implements KernelAwareContext
 
     $acl_command->setContainer($this->getClient()->getContainer());
     $return = $acl_command->run(new ArrayInput([]), new NullOutput());
-    assert($return !== 0, "Oh no!");
+    Assert::assertEquals(0,$return);
   }
 
   // endregion BEFORE SCENARIO
@@ -558,7 +558,7 @@ class FeatureContext extends MinkContext implements KernelAwareContext
         return;
       }
     }
-    assert(false, "Didn't find " . $recipient . ' in recipients.');
+    Assert::assertTrue(false);
   }
 
   /**
@@ -620,7 +620,7 @@ class FeatureContext extends MinkContext implements KernelAwareContext
         ->getContent(), $needle) === false
     )
     {
-      assert(false, $needle . " not found in the response ");
+      Assert::assertTrue(false);
     }
   }
 
@@ -800,33 +800,6 @@ class FeatureContext extends MinkContext implements KernelAwareContext
   }
 
   /**
-   * @When /^I POST login with user "([^"]*)" and password "([^"]*)"$/
-   * @param $uname
-   * @param $pwd
-   */
-  public function iPostLoginUserWithPassword($uname, $pwd)
-  {
-    $csrfToken = $this->getSymfonyService('security.csrf.token_manager')
-      ->getToken('authenticate')->getValue();
-
-    $session = $this->getClient()
-      ->getContainer()
-      ->get("session");
-    $session->set('_csrf_token', $csrfToken);
-    $session->set('something', $csrfToken);
-    $session->save();
-    $cookie = new Cookie($session->getName(), $session->getId());
-    $this->getClient()
-      ->getCookieJar()
-      ->set($cookie);
-
-    $this->iHaveAParameterWithValue("_username", $uname);
-    $this->iHaveAParameterWithValue("_password", $pwd);
-    $this->iHaveAParameterWithValue("_csrf_token", $csrfToken);
-    $this->iPostTheseParametersTo("/login_check");
-  }
-
-  /**
    * @Given /^the LDAP server is not available$/
    */
   public function theLdapServerIsNotAvailable()
@@ -850,7 +823,7 @@ class FeatureContext extends MinkContext implements KernelAwareContext
 
     if (!strcmp($link->getUri(), $arg2))
     {
-      assert(false, "expected: " . $arg2 . "  get: " . $link->getURI());
+      Assert::assertTrue(false);
     }
   }
 
@@ -862,9 +835,7 @@ class FeatureContext extends MinkContext implements KernelAwareContext
   public function theResponseHeadershouldContainTheKeyWithTheValue($headerKey, $headerValue)
   {
     $headers = $this->getClient()->getResponse()->headers;
-    Assert::assertEquals($headerValue, $headers->get($headerKey),
-      "expected: " . $headerKey . ": " . $headerValue .
-      "\nget: " . $headerKey . ": " . $headers->get($headerKey));
+    Assert::assertEquals($headerValue, $headers->get($headerKey));
   }
 
   /**
@@ -886,8 +857,7 @@ class FeatureContext extends MinkContext implements KernelAwareContext
   public function theResponseCodeShouldBe($code)
   {
     $response = $this->getClient()->getResponse();
-    Assert::assertEquals($code, $response->getStatusCode(),
-      'Wrong response code. ' . $response->getContent());
+    Assert::assertEquals($code, $response->getStatusCode());
   }
 
   /**
@@ -915,7 +885,6 @@ class FeatureContext extends MinkContext implements KernelAwareContext
   public function thereAreLdapUsers(TableNode $table)
   {
     /**
-     *
      * @var $ldap_test_driver LdapTestDriver
      */
     $ldap_test_driver = $this->getSymfonyService('fr3d_ldap.ldap_driver');

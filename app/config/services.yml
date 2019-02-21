@@ -453,6 +453,7 @@ services:
     arguments:
     - "@fr3d_ldap.ldap_driver"
     - "@fr3d_ldap.user_hydrator"
+    - "@usermanager"
     - '%fr3d_ldap.ldap_manager.parameters%'
     - '%ldap_role_mappings%'
     - '%ldap_group_filter%'
