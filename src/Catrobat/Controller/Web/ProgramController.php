@@ -42,6 +42,27 @@ use Twig\Error\Error;
 class ProgramController extends Controller
 {
 
+
+
+    /**
+     * @Route("/project/steal/{id}", name="steal_program", methods={"GET"})
+     *
+     * @param Request $request
+     * @param $id
+     *
+     * @return JsonResponse
+     */
+    public function programStealAction(Request $request, $id, ProgramManager $program_manager)
+    {
+        $user_id = $this->getUser()->getID();
+
+        $result = $program_manager->stealProgram($id, $user_id);
+
+        return new JsonResponse([
+            'result'  => $result,
+        ]);
+    }
+
   /**
    * @Route("/project/remixgraph/{id}", name="program_remix_graph", methods={"GET"})
    *

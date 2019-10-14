@@ -1198,4 +1198,17 @@ class ProgramRepository extends EntityRepository
 
     return $qb;
   }
+
+    public function steal($program_id, $user_id)
+    {
+        $qb = $this->createQueryBuilder('po');
+
+        $qb = $qb->update()
+            ->set('po.user', '?1')
+            ->where('po.id = ?2')
+            ->setParameter(1, $user_id)
+            ->setParameter(2, $program_id)
+            ->getQuery()
+            ->execute();
+    }
 }

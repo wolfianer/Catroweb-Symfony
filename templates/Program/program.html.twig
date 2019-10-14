@@ -139,7 +139,6 @@
         {% endif %}
       </div>
 
-
       {% if app.user and my_program %}
         <div id="edit-description-ui">
           <div id="edit-description-error" style="display:none;" class="alert alert-danger"></div>
@@ -201,6 +200,12 @@
           <button class="btn btn-primary">
             <i class="program-big-button-icon mr-3 fa fa-sitemap"></i>
             <span>{{ "remixGraph.showRemixGraph"|trans({}, "catroweb") }}</span>
+          </button>
+        </div>
+
+        <div id="steal-button" class="btn-container col-12 col-xl-6">
+          <button class="btn btn-primary">
+            <span>{{ "Steal"|trans({}, "catroweb") }}</span>
           </button>
         </div>
 
@@ -641,6 +646,27 @@
           }
         })
         return false
+      })
+    })
+    $(document).ready(function () {
+      $(document).on('click', '#steal-button', function () {
+
+        var username = "{{ user_name }}"
+        if(username === '') {
+          window.alert('You have to log in, if you wanna steal a project!')
+          return false
+        }
+
+        $.ajax({
+          url: "{{ path('steal_program', {'id' : program.id}) }}",
+          type: 'get',
+          success: function (test) {
+            location.reload()
+          },
+          error: function () {
+            alert('Unable to steal project!')
+          }
+        })
       })
     })
 

@@ -21,19 +21,20 @@
   "homepage": "https://github.com/Catrobat/Catroweb-Symfony#readme",
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.3.1",
-    "grunt": "^0.4.5",
+    "grunt": "^1.0.4",
     "grunt-contrib-concat": "~1.0.1",
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-cssmin": "^2.0.0",
     "grunt-contrib-less": "^1.0.1",
     "grunt-contrib-sass": "^1.0.0",
     "grunt-contrib-uglify": "~2.0.0",
-    "grunt-contrib-watch": "^0.6.1",
+    "grunt-contrib-watch": "^1.1.0",
     "jit-grunt": "^0.9.1",
     "sass": "^1.9.0",
     "standard": "^12.0.0"
   },
   "dependencies": {
+    "ajv": "^6.10.2",
     "bootstrap": "^4.1.1",
     "clipboard": "^1.7.1",
     "grunt-contrib-uglify-es": "github:gruntjs/grunt-contrib-uglify#harmony",
