@@ -43,20 +43,22 @@ class ProgramController extends Controller
 {
 
 
-
     /**
      * @Route("/project/steal/{id}", name="steal_program", methods={"GET"})
      *
      * @param Request $request
      * @param $id
      *
+     * @param ProgramManager $program_manager
      * @return JsonResponse
+     * @throws ORMException
+     * @throws OptimisticLockException
      */
     public function programStealAction(Request $request, $id, ProgramManager $program_manager)
     {
-        $user_id = $this->getUser()->getID();
+        $user = $this->getUser();
 
-        $result = $program_manager->stealProgram($id, $user_id);
+        $result = $program_manager->stealProgram($id, $user);
 
         return new JsonResponse([
             'result'  => $result,

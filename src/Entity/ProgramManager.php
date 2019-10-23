@@ -281,6 +281,7 @@ class ProgramManager
    * @param $program_id
    * @param $user_id
    *
+   *
    * @return mixed
    */
   public function findUserLike($program_id, $user_id)
@@ -288,9 +289,23 @@ class ProgramManager
     return $this->program_like_repository->findOneBy(['program_id' => $program_id, 'user_id' => $user_id]);
   }
 
-  public function stealProgram($program_id, $user_id)
+    /**
+     * @param $program_id
+     * @param $user
+     *
+     * @return mixed
+     * @throws ORMException
+     * @throws OptimisticLockException
+     */
+  public function stealProgram($program_id,User $user)
   {
-      return $this->program_repository->steal($program_id, $user_id);
+      $program = $this->find($program_id);
+
+      $program->setUser($user);
+
+      $this->entity_manager->flush();
+
+      return true;
   }
 
   /**
