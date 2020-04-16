@@ -20,6 +20,7 @@ use Doctrine\ORM\ORMException;
 use Exception;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\JWTEncodeFailureException;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTManager;
+use OpenAPI\Server\Model\Projects;
 use PHPUnit\Framework\Assert;
 use RuntimeException;
 use Swift_Message;
@@ -101,6 +102,20 @@ class ApiContext implements KernelAwareContext
   private array $checked_catrobat_remix_backward_relations;
 
   private Program $my_program;
+
+  private array $program_structure = ['id', 'name', 'description', 'version',
+    'views', 'download', 'private', 'flavor', 'uploaded',
+    'uploaded_string', 'screenshot_large', 'screenshot_small',
+    'project_url', 'download_url', 'filesize', ];
+
+  private array $featured_program_structure = ['id', 'name', 'author', 'featured_image'];
+
+  private array $media_file_structure = ['id', 'name', 'flavor', 'package', 'category',
+    'author', 'extension', 'download_url', ];
+
+  private array $programs_structure = ['projects', 'total_results'];
+
+  private array $media_files_structure = ['media_files', 'total_results'];
 
   public function getKernelBrowser(): KernelBrowser
   {
@@ -566,7 +581,7 @@ class ApiContext implements KernelAwareContext
   }
 
   /**
-   * @Then /^the response status code should be "([^"]*)"$/
+   * @Then /^The response status code should be "([^"]*)"$/
    *
    * @param mixed $status_code
    */
@@ -1633,6 +1648,191 @@ class ApiContext implements KernelAwareContext
   {
     $response = $this->getKernelBrowser()->getResponse();
     $this->assertJsonRegex($this->stored_json[$name], $response->getContent());
+  }
+
+  /**
+   * @Then /^The response should contain the following projects:$/
+   */
+  public function responseShouldContainTheFollowingProjects(TableNode $table): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+
+    $responseArray = json_decode($response->getContent(), true);
+    $returned_programs = $responseArray['projects'];
+    $expected_programs = $table->getHash();
+
+    Assert::assertEquals(count($returned_programs), count($expected_programs), 'Number of returned programs should be '.count($returned_programs));
+
+    foreach ($expected_programs as $expected_key => $expected_program)
+    {
+      foreach ($returned_programs as $returned_key => $returned_program)
+      {
+        if ($expected_program['Name'] === $returned_program['name'])
+        {
+          unset($expected_programs[$expected_key], $returned_programs[$returned_key]);
+
+          break;
+        }
+      }
+    }
+    unset($expected_program, $returned_program);
+
+    if (count($returned_programs) > 0)
+    {
+      $values = [];
+      foreach ($returned_programs as $key => $value)
+      {
+        $values[] = $value['name'];
+      }
+      $projects = implode(',', $values);
+      Assert::assertEquals(count($returned_programs), 0, 'Returned projects have ['.$projects.'] unmatched');
+    }
+    if (count($expected_programs) > 0)
+    {
+      $values = [];
+      foreach ($expected_programs as $key => $value)
+      {
+        $values[] = $value['name'];
+      }
+      $projects = implode(',', $values);
+      Assert::assertEquals(count($expected_programs), 0, 'Expected projects have ['.$projects.'] unmatched');
+    }
+  }
+
+  /**
+   * @Then /^The response should contain projects in the following order:$/
+   */
+  public function responseShouldContainProjectsInTheFollowingOrder(TableNode $table): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+
+    $responseArray = json_decode($response->getContent(), true);
+    $returned_programs = $responseArray['projects'];
+    $expected_programs = $table->getHash();
+
+    Assert::assertEquals(count($returned_programs), count($expected_programs), 'Number of returned programs should be '.count($returned_programs));
+
+    for ($i = 0; $i < count($returned_programs); ++$i)
+    {
+      Assert::assertEquals($returned_programs[$i]['name'], $expected_programs[$i]['Name']);
+    }
+  }
+
+  /**
+   * @Then /^The response should have the projects model structure$/
+   */
+  public function responseShouldHaveProjectsModelStructure(): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+    $responseArray = json_decode($response->getContent(), true);
+
+    foreach ($this->programs_structure as $key)
+    {
+      Assert::assertArrayHasKey($key, $responseArray, 'Response should contain '.$key);
+    }
+
+    $returned_programs = $responseArray['projects'];
+
+    foreach ($returned_programs as $program)
+    {
+      foreach ($this->program_structure as $key)
+      {
+        Assert::assertArrayHasKey($key, $program, 'Program should contain '.$key);
+      }
+    }
+  }
+
+  /**
+   * @Then /^The response should have the featured projects model structure$/
+   */
+  public function responseShouldHaveFeaturedProjectsModelStructure(): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+    $responseArray = json_decode($response->getContent(), true);
+
+    foreach ($this->programs_structure as $key)
+    {
+      Assert::assertArrayHasKey($key, $responseArray, 'Response should contain '.$key);
+    }
+
+    $returned_programs = $responseArray['projects'];
+
+    foreach ($returned_programs as $program)
+    {
+      foreach ($this->featured_program_structure as $key)
+      {
+        Assert::assertArrayHasKey($key, $program, 'Program should contain '.$key);
+      }
+    }
+  }
+
+  /**
+   * @Then /^The response should have the media files model structure$/
+   */
+  public function responseShouldHaveMediaFilesModelStructure(): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+    $responseArray = json_decode($response->getContent(), true);
+
+    foreach ($this->media_files_structure as $key)
+    {
+      Assert::assertArrayHasKey($key, $responseArray, 'Response should contain '.$key);
+    }
+
+    $returned_programs = $responseArray['media_files'];
+
+    foreach ($returned_programs as $program)
+    {
+      foreach ($this->media_file_structure as $key)
+      {
+        Assert::assertArrayHasKey($key, $program, 'Program should contain '.$key);
+      }
+    }
+  }
+
+  /**
+   * @Then /^The response should contain media files in the following order:$/
+   */
+  public function responseShouldContainMediaFilesInTheFollowingOrder(TableNode $table): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+
+    $responseArray = json_decode($response->getContent(), true);
+    $returned_programs = $responseArray['media_files'];
+    $expected_programs = $table->getHash();
+
+    Assert::assertEquals(count($returned_programs), count($expected_programs), 'Number of returned programs should be '.count($returned_programs));
+
+    for ($i = 0; $i < count($returned_programs); ++$i)
+    {
+      Assert::assertEquals($returned_programs[$i]['name'], $expected_programs[$i]['Name']);
+    }
+  }
+
+  /**
+   * @Then /^The response should contain (\d+) projects$/
+   */
+  public function responseShouldContainNumberProjects(int $projects): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+
+    $responseArray = json_decode($response->getContent(), true);
+    $returned_programs = $responseArray['projects'];
+
+    Assert::assertEquals(count($returned_programs), $projects, 'Number of returned programs should be '.count($returned_programs));
+  }
+
+  /**
+   * @Then /^The response should contain total projects with value (\d+)$/
+   */
+  public function responseShouldContainTotalProjectsWithNumber(int $total_projects): void
+  {
+    $response = $this->getKernelBrowser()->getResponse();
+
+    $responseArray = json_decode($response->getContent(), true);
+    $returned_total_projects = $responseArray['total_results'];
+
+    Assert::assertEquals($returned_total_projects, $total_projects, 'Number of total projects should be '.$returned_total_projects);
   }
 
   /**

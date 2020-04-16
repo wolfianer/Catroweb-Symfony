@@ -8,7 +8,7 @@ Feature: Uploading a project
 
   Scenario: An request with missing jwt token should result in an error
     And I request "POST" "/api/projects"
-    Then the response status code should be "401"
+    Then The response status code should be "401"
 
   Scenario: An request with missing mandatory checksum parameter should result in an error
     Given I use a valid JWT Bearer token for "Catrobat"
@@ -16,7 +16,7 @@ Feature: Uploading a project
     And I have a request header "HTTP_ACCEPT" with value "application/json"
     And I have a parameter "file" with value "file"
     And I request "POST" "/api/projects"
-    Then the response status code should be "400"
+    Then The response status code should be "400"
 
   Scenario: An request with missing mandatory file parameter should result in an error
     Given I use a valid JWT Bearer token for "Catrobat"
@@ -24,7 +24,7 @@ Feature: Uploading a project
     And I have a request header "HTTP_ACCEPT" with value "application/json"
     And I have a parameter "checksum" with value "checksum"
     And I request "POST" "/api/projects"
-    Then the response status code should be "400"
+    Then The response status code should be "400"
 
   Scenario: An request with an invalid flavor parameter should result in an error
     Given I use a valid JWT Bearer token for "Catrobat"
@@ -32,7 +32,7 @@ Feature: Uploading a project
     And I have a request header "HTTP_ACCEPT" with value "application/json"
     And I have a parameter "flavor" with value "pocketcooode"
     And I request "POST" "/api/projects"
-    Then the response status code should be "400"
+    Then The response status code should be "400"
 
   Scenario: An request with an invalid value of the private parameter should result in an error
     Given I use a valid JWT Bearer token for "Catrobat"
@@ -40,7 +40,7 @@ Feature: Uploading a project
     And I have a request header "HTTP_ACCEPT" with value "application/json"
     And I have a parameter "private" with value "faaalse"
     And I request "POST" "/api/projects"
-    Then the response status code should be "400"
+    Then The response status code should be "400"
 
   Scenario: A request with an invalid value of the file parameter should result in an error
     Given I use a valid JWT Bearer token for "Catrobat"
@@ -49,7 +49,7 @@ Feature: Uploading a project
     And I have a parameter "checksum" with value "checksum"
     And I have a parameter "checksum" with value "text"
     And I request "POST" "/api/projects"
-    Then the response status code should be "400"
+    Then The response status code should be "400"
 
   Scenario: A mismatch between the checksum of the uploaded file and the checksum parameter should result in an UploadError
     Given I use a valid JWT Bearer token for "Catrobat"
@@ -58,7 +58,7 @@ Feature: Uploading a project
     And I have a parameter "checksum" with value "wrong_checksum"
     And I have a broken Catrobat file, API version 2
     And I request "POST" "/api/projects"
-    Then the response status code should be "422"
+    Then The response status code should be "422"
     And I should get the json object:
     """
       {
@@ -73,7 +73,7 @@ Feature: Uploading a project
     And I have a parameter "checksum" with value "5A136BCF4179C875F61BD7505A1A63F6"
     And I have a broken Catrobat file, API version 2
     And I request "POST" "/api/projects"
-    Then the response status code should be "422"
+    Then The response status code should be "422"
     And I should get the json object:
     """
       {
@@ -89,7 +89,7 @@ Feature: Uploading a project
     And I have a parameter "checksum" with value "5A136BCF4179C875F61BD7505A1A63F6"
     And I have a broken Catrobat file, API version 2
     And I request "POST" "/api/projects"
-    Then the response status code should be "422"
+    Then The response status code should be "422"
     And I should get the json object:
     """
       {
@@ -104,9 +104,9 @@ Feature: Uploading a project
     And I have a parameter "checksum" with value "B472E2CB01AEACE0F359D0A1FE9A4036"
     And I have a valid Catrobat file, API version 2
     And I request "POST" "/api/projects"
-    Then the response status code should be "201"
+    Then The response status code should be "201"
     And the uploaded project should exist in the database, API version 2
-    And the response should contain a location header with URL of the uploaded project
+    And The response should contain a location header with URL of the uploaded project
 
   Scenario: uploading the same project again should result in an update
     Given I am "Catrobat"

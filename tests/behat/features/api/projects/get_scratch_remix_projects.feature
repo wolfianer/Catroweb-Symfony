@@ -33,7 +33,10 @@ Feature: Get remixed program from Scratch
     And I have a parameter "offset" with value "0"
     And I have a request header "HTTP_ACCEPT" with value "application/json"
     And I request "GET" "/api/projects/?project_type=scratch"
-    Then I should get 5 projects in the following order:
+    Then The response status code should be "200"
+    Then The response should have the projects model structure
+    Then The response should contain total projects with value 5
+    Then The response should contain projects in the following order:
       | Name      |
       | program 9 |
       | program 7 |
@@ -67,15 +70,17 @@ Feature: Get remixed program from Scratch
     And I have a parameter "offset" with value "0"
     And I have a request header "HTTP_ACCEPT" with value "application/json"
     And I request "GET" "/api/projects/?project_type=scratch"
-    Then the response status code should be "200"
-    Then I should get 6 projects in the following order:
+    Then The response status code should be "200"
+    Then The response should have the projects model structure
+    Then The response should contain total projects with value 7
+    Then The response should contain projects in the following order:
       | Name      |
       | program 9 |
       | program 7 |
       | program 6 |
       | program 8 |
       | program 5 |
-      | program 18 |
+      | program 18|
 
   Scenario: program upload with parent-URL referring to existing Catrobat programs and
   Catrobat language version 1.0 should correctly add remix relations (example #2)
@@ -103,8 +108,10 @@ Feature: Get remixed program from Scratch
     And I have a parameter "offset" with value "0"
     And I have a request header "HTTP_ACCEPT" with value "application/json"
     And I request "GET" "/api/projects/?project_type=scratch"
-    Then the response status code should be "200"
-    Then I should get 8 projects in the following order:
+    Then The response status code should be "200"
+    Then The response should have the projects model structure
+    Then The response should contain total projects with value 8
+    Then The response should contain projects in the following order:
       | Name       |
       | program 10 |
       | program 11 |

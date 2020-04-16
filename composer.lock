@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1e3cabd3c0b7fb712d2001aff63078a8",
+    "content-hash": "d3c58dcaf15e6d8da35860646bbd328e",
     "packages": [
         {
             "name": "beberlei/doctrineextensions",
@@ -62,16 +62,16 @@
         },
         {
             "name": "catrobat/capi",
-            "version": "v1.0.35",
+            "version": "v1.0.36",
             "source": {
                 "type": "git",
                 "url": "https://github.com/HCrane/CAPI.git",
-                "reference": "88c72c8465968567dbd1e87b159376ab1fd9b0b5"
+                "reference": "f418497bd9a38d0f6b481e475160ae5493d5d16e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/HCrane/CAPI/zipball/88c72c8465968567dbd1e87b159376ab1fd9b0b5",
-                "reference": "88c72c8465968567dbd1e87b159376ab1fd9b0b5",
+                "url": "https://api.github.com/repos/HCrane/CAPI/zipball/f418497bd9a38d0f6b481e475160ae5493d5d16e",
+                "reference": "f418497bd9a38d0f6b481e475160ae5493d5d16e",
                 "shasum": ""
             },
             "require": {
@@ -114,10 +114,10 @@
                 "sdk"
             ],
             "support": {
-                "source": "https://github.com/HCrane/CAPI/tree/v1.0.35",
+                "source": "https://github.com/HCrane/CAPI/tree/v1.0.36",
                 "issues": "https://github.com/HCrane/CAPI/issues"
             },
-            "time": "2020-04-13T05:41:26+00:00"
+            "time": "2020-04-16T11:50:13+00:00"
         },
         {
             "name": "clue/stream-filter",
@@ -1955,7 +1955,7 @@
             "keywords": [
                 "google"
             ],
-            "time": "2020-02-17T00:24:19+00:00"
+            "time": "2020-04-13T00:24:55+00:00"
         },
         {
             "name": "google/auth",
@@ -11023,18 +11023,18 @@
             "authors": [
                 {
                     "name": "Arne Blankerts",
-                    "role": "Developer",
-                    "email": "arne@blankerts.de"
+                    "email": "arne@blankerts.de",
+                    "role": "Developer"
                 },
                 {
                     "name": "Sebastian Heuer",
-                    "role": "Developer",
-                    "email": "sebastian@phpeople.de"
+                    "email": "sebastian@phpeople.de",
+                    "role": "Developer"
                 },
                 {
                     "name": "Sebastian Bergmann",
-                    "role": "Developer",
-                    "email": "sebastian@phpunit.de"
+                    "email": "sebastian@phpunit.de",
+                    "role": "Developer"
                 }
             ],
             "description": "Library for handling version information and constraints",
@@ -11726,8 +11726,8 @@
             "authors": [
                 {
                     "name": "Sebastian Bergmann",
-                    "role": "lead",
-                    "email": "sebastian@phpunit.de"
+                    "email": "sebastian@phpunit.de",
+                    "role": "lead"
                 }
             ],
             "description": "FilterIterator implementation that filters files based on a list of suffixes.",
@@ -11768,8 +11768,8 @@
             "authors": [
                 {
                     "name": "Sebastian Bergmann",
-                    "role": "lead",
-                    "email": "sebastian@phpunit.de"
+                    "email": "sebastian@phpunit.de",
+                    "role": "lead"
                 }
             ],
             "description": "Simple template engine.",
@@ -11817,8 +11817,8 @@
             "authors": [
                 {
                     "name": "Sebastian Bergmann",
-                    "role": "lead",
-                    "email": "sebastian@phpunit.de"
+                    "email": "sebastian@phpunit.de",
+                    "role": "lead"
                 }
             ],
             "description": "Utility class for timing",
@@ -12742,8 +12742,8 @@
             "authors": [
                 {
                     "name": "Sebastian Bergmann",
-                    "role": "lead",
-                    "email": "sebastian@phpunit.de"
+                    "email": "sebastian@phpunit.de",
+                    "role": "lead"
                 }
             ],
             "description": "Collection of value objects that represent the types of the PHP type system",
@@ -12785,8 +12785,8 @@
             "authors": [
                 {
                     "name": "Sebastian Bergmann",
-                    "role": "lead",
-                    "email": "sebastian@phpunit.de"
+                    "email": "sebastian@phpunit.de",
+                    "role": "lead"
                 }
             ],
             "description": "Library that helps with managing the version number of Git-hosted PHP projects",

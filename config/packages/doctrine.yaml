@@ -33,3 +33,4 @@ doctrine:
         time_sub: App\DQL\TimeSub
       string_functions:
         match: DoctrineExtensions\Query\Mysql\MatchAgainst
+        rand: DoctrineExtensions\Query\Mysql\Rand
