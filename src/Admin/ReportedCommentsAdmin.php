@@ -3,11 +3,14 @@
 namespace App\Admin;
 
 use App\Entity\Program;
+use App\Entity\User;
+use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
 use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Datagrid\ProxyQueryInterface;
+use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Route\RouteCollection;
 use Sonata\DoctrineORMAdminBundle\Datagrid\ProxyQuery;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -36,9 +39,25 @@ class ReportedCommentsAdmin extends AbstractAdmin
     /** @var QueryBuilder $qb */
     $qb = $query->getQueryBuilder();
 
-    $qb->andWhere(
-      $qb->expr()->eq($qb->getRootAliases()[0].'.isReported', $qb->expr()->literal(true))
-    );
+    $rootAlias = $qb->getRootAliases()[0];
+    $parameters = $this->getFilterParameters();
+    if ('getReportedCommentsCount' === $parameters['_sort_by'])
+    {
+      $qb->andWhere(
+        $qb->expr()->eq($rootAlias. '.isReported', $qb->expr()->literal(true)))
+        ->groupBy($rootAlias)
+        ->orderBy('COUNT('.$rootAlias.'.user )', $parameters['_sort_order'])
+      ;
+    } else
+    {
+      $qb->andWhere(
+        $qb->expr()->eq($rootAlias. '.isReported', $qb->expr()->literal(true))
+      );
+    }
+
+
+
+
 
     return $query;
   }
@@ -52,6 +71,12 @@ class ReportedCommentsAdmin extends AbstractAdmin
   {
   }
 
+  protected function configureFormFields(FormMapper $formMapper): void
+  {
+    $formMapper
+      ->add('user', EntityType::class, ['class' => User::class])
+    ;
+  }
   /**
    * @param ListMapper $listMapper
    *
@@ -60,17 +85,28 @@ class ReportedCommentsAdmin extends AbstractAdmin
   protected function configureListFields(ListMapper $listMapper): void
   {
     $listMapper
-      ->add('id')
-      ->add('program', EntityType::class,
+      ->add('username', null, [
+        'label' => 'Comment author',
+      ])
+      ->add(
+        'getReportedCommentsCount',
+        null,
         [
-          'class' => Program::class,
-          'admin_code' => 'catrowebadmin.block.programs.all',
-          'editable' => false,
+          'label' => '#Reported Comments from author',
+          'sortable' => true,
+          'sort_field_mapping' => ['fieldName' => 'user'],
+          'sort_parent_association_mappings' => [],
         ])
-      ->add('user')
-      ->add('uploadDate')
+      ->add('user.limited', 'boolean', [
+        'editable' => true,
+      ])
+      ->add('program.name', null, [
+        'label' => 'Program commented on'
+      ])
+      ->add('uploadDate', null, [
+        'label' => 'Upload date of comment'
+     ])
       ->add('text')
-      ->add('username')
       ->add('_action', 'actions', ['actions' => [
         'delete' => ['template' => 'Admin/CRUD/list__action_delete_comment.html.twig'],
         'unreportComment' => ['template' => 'Admin/CRUD/list__action_unreportComment.html.twig'],
@@ -85,3 +121,5 @@ class ReportedCommentsAdmin extends AbstractAdmin
     $collection->remove('create')->remove('delete')->remove('export');
   }
 }
+
+

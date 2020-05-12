@@ -189,4 +189,8 @@ class UserComment
   {
     $this->notification = $notification;
   }
+  public function getReportedCommentsCount() : int
+  {
+    return $this->getUser()->getReportedCommentsCount();
+  }
 }
