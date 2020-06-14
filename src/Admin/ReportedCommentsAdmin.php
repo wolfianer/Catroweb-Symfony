@@ -39,15 +39,56 @@ class ReportedCommentsAdmin extends AbstractAdmin
     /** @var QueryBuilder $qb */
     $qb = $query->getQueryBuilder();
 
+
     $rootAlias = $qb->getRootAliases()[0];
     $parameters = $this->getFilterParameters();
     if ('getReportedCommentsCount' === $parameters['_sort_by'])
     {
-      $qb->andWhere(
-        $qb->expr()->eq($rootAlias. '.isReported', $qb->expr()->literal(true)))
-        ->groupBy($rootAlias)
-        ->orderBy('COUNT('.$rootAlias.'.user )', $parameters['_sort_order'])
-      ;
+      $sub = $qb->getEntityManager()->createQueryBuilder();
+
+     /* $sub->select('c')
+        ->addSelect( 'count(c.user)')
+        ->from('App\Entity\UserComment', 'c')
+        //->where($qb->expr()->eq('c.isReported', '1'))
+        ->groupBy('c.user')
+      ;*/
+
+      $sub->select(array('c', 'count(c.user)'))
+        ->from('App\Entity\UserComment', 'c')
+      // Instead of setting the parameter in the main query below, it could be quoted here:
+      // ->where('status = ' . $connection->quote(UserSurveyStatus::ACCESSED))
+      //->where('status = :status')
+      ->groupBy('c.user');
+
+
+      //->leftJoin($sub->getDQL(), 'counter', Join::WITH, $rootAlias.'.user = counter.user');
+      //[Syntax Error] line 0, col 49: Error: Expected Doctrine\ORM\Query\Lexer::T_ALIASED_NAME, got 'SELECT'
+      $qb->leftJoin(sprintf('(%s)', $sub->getQuery()->getDQL()), 'counter', Join::WITH, $sub->getRootAliases()[0].'.user = counter.user')
+      ->setParameter('isReported', true);
+
+      //->where($qb->expr()->eq('counter.isReported', '1'))
+        //->groupBy('counter.user');
+      /*$qb->andWhere(
+      $qb->expr()->eq($rootAlias. '.isReported', $qb->expr()->literal(true))
+      )*/
+  /*   $qb
+       ->join('App\Entity\UserComment', 'i')
+       ->where(
+         $qb->expr()->in(
+           'i.user',
+           $sub->getDQL()
+       ));*/
+
+
+
+      // var_dump($qb->getQuery()->getSQL());
+       var_dump($qb->getQuery()->getDQL());
+       var_dump($qb->getQuery()->getResult());
+      //var_dump($sub->getQuery()->getSQL());
+      //var_dump($sub->getQuery()->getDQL());
+      //var_dump($sub->getQuery()->getResult());
+      die;
+
     } else
     {
       $qb->andWhere(
