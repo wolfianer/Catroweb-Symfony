@@ -51,7 +51,7 @@ class ReportedUsersAdmin extends AbstractAdmin
           ;
     }
 
-    if ('getProgramInappropriateReportsCount' === $parameters['_sort_by'])
+    if ('getActiveProgramInappropriateReportsCount' === $parameters['_sort_by'])
     {
       $qb
         ->leftJoin('App\Entity\Program', 'p', Join::WITH,
@@ -87,7 +87,7 @@ class ReportedUsersAdmin extends AbstractAdmin
             'sort_parent_association_mappings' => [],
           ])
       ->add(
-          'getProgramInappropriateReportsCount',
+        'getActiveProgramInappropriateReportsCount',
           null,
           [
             'label' => '#Reported Programs',

@@ -59,9 +59,9 @@ class ReportedProgramsAdmin extends AbstractAdmin
       ->add('state', 'choice',
         [
           'choices' => [1 => 'New', 2 => 'Accepted', 3 => 'Rejected'],
+          'editable' => true,
         ])
       ->add('category', null, ['sortable' => false])
-      ->add('note', null, ['sortable' => false])
       ->add('reportingUser', EntityType::class, ['class' => User::class])
       ->add('program', EntityType::class,
         [
@@ -69,8 +69,9 @@ class ReportedProgramsAdmin extends AbstractAdmin
           'admin_code' => 'catrowebadmin.block.programs.all',
           'editable' => false,
         ])
-      ->add('program.visible')
-      ->add('program.approved', null, ['sortable' => false])
+      ->add('program.user', null, ['sortable' => false])
+      ->add('program.visible', null, ['editable' => true,'sortable' => false])
+      ->add('program.approved', null, ['editable' => true,'sortable' => false])
       ->add('_action', 'actions', ['actions' => [
         'unreportProgram' => ['template' => 'Admin/CRUD/list__action_unreportProgram.html.twig'],
         'acceptProgramReport' => ['template' => 'Admin/CRUD/list__action_accept_program_report.html.twig'],

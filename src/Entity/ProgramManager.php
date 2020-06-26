@@ -582,6 +582,10 @@ class ProgramManager
   }
 
   /**
+   * @param string $user_id
+   * @param bool   $include_debug_build_programs
+   * @param string $max_version
+   *
    * @return Program[]
    */
   public function getUserPrograms(string $user_id, bool $include_debug_build_programs = false, string $max_version = '0'): array

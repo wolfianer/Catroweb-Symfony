@@ -239,6 +239,10 @@ class ResetCommand extends Command
   }
 
   /**
+   * @param array           $program_names
+   * @param array           $user_array
+   * @param OutputInterface $output
+   *
    * @throws Exception
    */
   private function reportProjects(array $program_names, array $user_array, OutputInterface $output): void
@@ -252,7 +256,6 @@ class ResetCommand extends Command
       $parameters = [
         'user' => $user_array[array_rand($user_array)],
         'program_name' => $program_names[$i],
-        'note' => 'bad',
       ];
       $ret = CommandHelper::executeSymfonyCommand('catrobat:report', $this->getApplication(), $parameters, $output);
 

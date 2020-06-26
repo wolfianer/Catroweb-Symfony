@@ -152,6 +152,13 @@ programs:
   reportRadioButtonCopyright: Copyright infringement
   reportRadioButtonSpam: It's spam
   reportRadioButtonDislike: I don't like it
+  reportRadioButtonSexual: Sexual content
+  reportRadioButtonViolence: Graphic violence
+  reportRadioButtonHate: Hateful or abusive content
+  reportRadioButtonImproper: Improper content rating
+  reportRadioButtonDrugs: Illegal prescription or other drug
+  reportRadioButtonCopycat: Copycat or impersonation
+  reportRadioButtonOther: Other objection
   reportOwnProgram: You cannot flag your own project.
   reportAlready: You've already flagged this project.
   reportDone: You reported this project!

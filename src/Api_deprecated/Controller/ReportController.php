@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Api_deprecated\Controller;
+namespace App\Catrobat\Controller\Api;
 
+use _HumbugBox3ab8cff0fda0\___PHPSTORM_HELPERS\this;
 use App\Catrobat\Events\ReportInsertEvent;
 use App\Catrobat\StatusCode;
 use App\Entity\Program;
@@ -9,6 +10,8 @@ use App\Entity\ProgramInappropriateReport;
 use App\Entity\ProgramManager;
 use App\Entity\User;
 use App\Entity\UserManager;
+use App\Utils\TimeUtils;
+use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,7 +21,8 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * @deprecated
+ * @ORM\Entity
+ * @ORM\Table(name="report_controller")
  */
 class ReportController extends AbstractController
 {
@@ -26,6 +30,8 @@ class ReportController extends AbstractController
   private ProgramManager $program_manager;
   private TranslatorInterface $translator;
   private EventDispatcherInterface $event_dispatcher;
+
+  private float $report_sensitivity = 2; // should be in a config file, the lower this value is, the faster a report will have consequences
 
   public function __construct(UserManager $user_manager, ProgramManager $program_manager,
                               TranslatorInterface $translator, EventDispatcherInterface $event_dispatcher)
@@ -37,6 +43,11 @@ class ReportController extends AbstractController
   }
 
   /**
+   * @param Request $request
+   *
+   * @return JsonResponse
+   * @throws \Doctrine\ORM\NoResultException
+   * @throws \Exception
    * @deprecated
    *
    * @Route("/api/reportProject/reportProject.json", name="catrobat_api_report_program",
@@ -50,7 +61,7 @@ class ReportController extends AbstractController
     $entity_manager = $this->getDoctrine()->getManager();
 
     $response = [];
-    if (!$request->get('program') || !$request->get('category') || !$request->get('note'))
+    if (!$request->get('program') || !$request->get('category'))
     {
       $response['statusCode'] = StatusCode::MISSING_POST_DATA;
       $response['answer'] = $this->translator->trans('errors.post-data', [], 'catroweb');
@@ -103,18 +114,40 @@ class ReportController extends AbstractController
       return JsonResponse::create([], Response::HTTP_UNAUTHORIZED);
     }
 
-    $program->setVisible(false);
+    /** @var ProgramInappropriateReport $previous_report */
+    $previous_report = $program->getReportFromReportingUser($user);
+
+    if($previous_report)
+    {
+      if($previous_report->getState() == 1)
+      {
+        $previous_report->setCategory($request->get('category'));
+        $previous_report->setTime(TimeUtils::getDateTime());
+        $entity_manager->flush();
+      }
+      $response = [];
+      $response['answer'] = $this->translator->trans('success.report', [], 'catroweb');
+      $response['statusCode'] = Response::HTTP_OK;
+
+      return JsonResponse::create($response);
+    }
+
     $report->setCategory($request->get('category'));
-    $report->setNote($request->get('note'));
     $report->setProgram($program);
 
     $entity_manager->persist($report);
     $entity_manager->flush();
 
     $this->event_dispatcher->dispatch(
-      new ReportInsertEvent($request->get('category'), $request->get('note'), $report)
+      new ReportInsertEvent($request->get('category'),  $report)
     );
 
+    if($program->getProgramReportScore() > $this->report_sensitivity)
+    {
+      $program->setVisible(false);
+    }
+
+    $entity_manager->flush();
     $response = [];
     $response['answer'] = $this->translator->trans('success.report', [], 'catroweb');
     $response['statusCode'] = Response::HTTP_OK;

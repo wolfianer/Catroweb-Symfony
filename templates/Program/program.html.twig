@@ -145,11 +145,13 @@
       '{{ "programs.report"                         |trans({}, "catroweb") }}',
       '{{ "cancel"                                  |trans({}, "catroweb") }}',
       '{{ "programs.reportDialogHeader"             |trans({}, "catroweb") }}',
-      '{{ "programs.reportDialogReason"             |trans({}, "catroweb") }}',
-      '{{ "programs.reportRadioButtonInappropriate" |trans({}, "catroweb") }}',
-      '{{ "programs.reportRadioButtonCopyright"     |trans({}, "catroweb") }}',
-      '{{ "programs.reportRadioButtonSpam"          |trans({}, "catroweb") }}',
-      '{{ "programs.reportRadioButtonDislike"       |trans({}, "catroweb") }}',
+      '{{ "programs.reportRadioButtonSexual"        |trans({}, "catroweb") }}',
+      '{{ "programs.reportRadioButtonViolence"      |trans({}, "catroweb") }}',
+      '{{ "programs.reportRadioButtonHate"          |trans({}, "catroweb") }}',
+      '{{ "programs.reportRadioButtonImproper"      |trans({}, "catroweb") }}',
+      '{{ "programs.reportRadioButtonDrugs"         |trans({}, "catroweb") }}',
+      '{{ "programs.reportRadioButtonCopycat"       |trans({}, "catroweb") }}',
+      '{{ "programs.reportRadioButtonOther"         |trans({}, "catroweb") }}',
         {{ constant('Symfony\\Component\\HttpFoundation\\Response::HTTP_OK') }},
         {{ logged_in }}
     )

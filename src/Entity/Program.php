@@ -1001,9 +1001,29 @@ class Program
     return $this->reports;
   }
 
+  public function getActiveReports(): Collection
+  {
+    $reports = $this->getReports();
+
+    $real_reports = new ArrayCollection();
+    foreach ($reports as $report)
+    {
+      if($report->getState() !== 3 )
+      {
+        $real_reports->add($report);
+      }
+    }
+    return $real_reports;
+  }
+
   public function getReportsCount(): int
   {
     return $this->getReports()->count();
+  }
+
+  public function getActiveReportsCount(): int
+  {
+    return $this->getActiveReports()->count();
   }
 
   /**
@@ -1068,6 +1088,25 @@ class Program
   public function isScratchProgram(): bool
   {
     return null !== $this->scratch_id;
+  }
+
+  function getProgramReportScore()
+  {
+    return (float)$this->getActiveReportsCount() * (float) $this->getUser()->getReportsProgramsRatio();
+  }
+
+  function getReportFromReportingUser(User $user)
+  {
+    $reports = $this->getReports()->getValues();
+
+    foreach($reports as $report)
+    {
+      if($report->getReportingUser() == $user )
+      {
+        return $report;
+      }
+    }
+    return null;
   }
 
   public function setSnapshotsEnabled(bool $snapshots_enabled): void

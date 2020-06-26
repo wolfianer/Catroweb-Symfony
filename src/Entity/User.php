@@ -312,6 +312,11 @@ class User extends BaseUser
     return $this->programs;
   }
 
+  public function getProgramsCount(): int
+  {
+    return $this->getPrograms()->count();
+  }
+
   public function getUploadToken(): ?string
   {
     return $this->upload_token;
@@ -445,6 +450,19 @@ class User extends BaseUser
     return $count;
   }
 
+  public function getActiveProgramInappropriateReportsCount(): int
+  {
+    $programs_collection = $this->getPrograms();
+    $programs = $programs_collection->getValues();
+    $count = 0;
+    foreach ($programs as $program)
+    {
+      $count += $program->getActiveReportsCount();
+    }
+
+    return $count;
+  }
+
   public function getComments(): Collection
   {
     return $this->comments;
@@ -477,6 +495,20 @@ class User extends BaseUser
   public function getGoogleAccessToken(): ?string
   {
     return $this->google_access_token;
+  }
+
+  public function getReportsProgramsRatio(): float
+  {
+    if($this->getProgramsCount() > 0)
+    {
+    return $this->getActiveProgramInappropriateReportsCount() /$this->getPrograms()->count();
+    }
+    return 0;
+  }
+
+  public function getReportsCommentsRatio(): float
+  {
+    return  $this->getReportedCommentsCount() / $this->getComments()->count();
   }
 
   public function changeCreatedAt(\DateTime $createdAt): void

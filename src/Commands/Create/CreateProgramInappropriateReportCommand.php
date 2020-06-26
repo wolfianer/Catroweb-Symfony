@@ -40,7 +40,6 @@ class CreateProgramInappropriateReportCommand extends Command
       ->setDescription('Report a project')
       ->addArgument('user', InputArgument::REQUIRED, 'User who reports on program')
       ->addArgument('program_name', InputArgument::REQUIRED, 'Name of program  which gets reported')
-      ->addArgument('note', InputArgument::REQUIRED, 'Report message')
     ;
   }
 
@@ -51,7 +50,7 @@ class CreateProgramInappropriateReportCommand extends Command
   {
     $username = $input->getArgument('user');
     $program_name = $input->getArgument('program_name');
-    $note = $input->getArgument('note');
+
 
     /** @var User|null $user */
     $user = $this->user_manager->findUserByUsername($username);
@@ -69,7 +68,7 @@ class CreateProgramInappropriateReportCommand extends Command
 
     try
     {
-      $this->reportProgram($program, $user, $note);
+      $this->reportProgram($program, $user);
     }
     catch (Exception $e)
     {
@@ -80,13 +79,12 @@ class CreateProgramInappropriateReportCommand extends Command
     return 0;
   }
 
-  private function reportProgram(Program $program, User $user, string $note): void
+  private function reportProgram(Program $program, User $user): void
   {
     $report = new ProgramInappropriateReport();
     $report->setReportingUser($user);
     $program->setVisible(false);
-    $report->setCategory('Inappropriate');
-    $report->setNote($note);
+    $report->setCategory('Sexual content');
     $report->setProgram($program);
     $this->entity_manager->persist($report);
     $this->entity_manager->flush();
