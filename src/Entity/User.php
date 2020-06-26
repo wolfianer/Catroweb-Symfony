@@ -506,6 +506,20 @@ class User extends BaseUser
     return 0;
   }
 
+  public function getReportsProgramsRatio(): float
+  {
+    if($this->getProgramsCount() > 0)
+    {
+    return $this->getActiveProgramInappropriateReportsCount() /$this->getPrograms()->count();
+    }
+    return 0;
+  }
+
+  public function getReportsCommentsRatio(): float
+  {
+    return  $this->getReportedCommentsCount() / $this->getComments()->count();
+  }
+
   public function changeCreatedAt(\DateTime $createdAt): void
   {
     $this->createdAt = $createdAt;
