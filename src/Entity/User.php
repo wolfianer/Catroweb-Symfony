@@ -510,14 +510,9 @@ class User extends BaseUser
   {
     if($this->getProgramsCount() > 0)
     {
-    return $this->getActiveProgramInappropriateReportsCount() /$this->getPrograms()->count();
+    return $this->getActiveProgramInappropriateReportsCount() /$this->getProgramsCount();
     }
     return 0;
-  }
-
-  public function getReportsCommentsRatio(): float
-  {
-    return  $this->getReportedCommentsCount() / $this->getComments()->count();
   }
 
   public function changeCreatedAt(\DateTime $createdAt): void
