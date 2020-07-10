@@ -170,7 +170,6 @@ class AllProgramsAdmin extends AbstractAdmin
         'choices' => $choices,
       ])
       ->add('views')
-      ->add('getProgramReportScore')
       ->add('downloads')
       ->add('thumbnail', 'string',
         [
