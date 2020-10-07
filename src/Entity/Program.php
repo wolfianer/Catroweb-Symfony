@@ -1006,6 +1006,45 @@ class Program
     return $this->getReports()->count();
   }
 
+  public function getActiveReports(): Collection
+  {
+    $reports = $this->getReports();
+
+    $real_reports = new ArrayCollection();
+    foreach ($reports as $report)
+    {
+      if($report->getState() !== 3 )
+      {
+        $real_reports->add($report);
+      }
+    }
+    return $real_reports;
+  }
+
+  public function getActiveReportsCount(): int
+  {
+    return $this->getActiveReports()->count();
+  }
+
+  function getProgramReportScore()
+  {
+    return (float)$this->getActiveReportsCount() * (float) $this->getUser()->getReportsProgramsRatio();
+  }
+
+  function getReportFromReportingUser(User $user)
+  {
+    $reports = $this->getReports()->getValues();
+
+    foreach($reports as $report)
+    {
+      if($report->getReportingUser() == $user )
+      {
+        return $report;
+      }
+    }
+    return null;
+  }
+
   /**
    * Returns the RemixNotifications which are triggered when this Program (child) is created as a remix of
    * another one (parent).

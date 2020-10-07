@@ -40,11 +40,6 @@ class ProgramInappropriateReport
   private ?string $category = null;
 
   /**
-   * @ORM\Column(name="note", type="text")
-   */
-  private ?string $note = null;
-
-  /**
    * @ORM\Column(name="time", type="datetime")
    */
   private ?DateTime $time = null;

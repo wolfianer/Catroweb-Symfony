@@ -459,6 +459,33 @@ class User extends BaseUser
     return $comments_collection->matching($criteria)->count();
   }
 
+  public function getProgramsCount(): int
+  {
+    return $this->getPrograms()->count();
+  }
+
+  public function getActiveProgramInappropriateReportsCount(): int
+  {
+    $programs_collection = $this->getPrograms();
+    $programs = $programs_collection->getValues();
+    $count = 0;
+    foreach ($programs as $program)
+    {
+      $count += $program->getActiveReportsCount();
+    }
+
+    return $count;
+  }
+
+  public function getReportsProgramsRatio(): float
+  {
+    if($this->getProgramsCount() > 0)
+    {
+      return $this->getActiveProgramInappropriateReportsCount() /$this->getProgramsCount();
+    }
+    return 0;
+  }
+
   public function setGoogleId(?string $google_id): void
   {
     $this->google_id = $google_id;

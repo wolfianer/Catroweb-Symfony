@@ -252,7 +252,6 @@ class ResetCommand extends Command
       $parameters = [
         'user' => $user_array[array_rand($user_array)],
         'program_name' => $program_names[$i],
-        'note' => 'bad',
       ];
       $ret = CommandHelper::executeSymfonyCommand('catrobat:report', $this->getApplication(), $parameters, $output);
 
