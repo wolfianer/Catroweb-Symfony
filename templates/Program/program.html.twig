@@ -139,7 +139,7 @@
   <script src="{{ asset('js/Program.min.js') }}"></script>
   <script src="{{ asset('js/ProgramReport.min.js') }}"></script>
   <script>
-    new ProgramReport('{{ program.id }}', '{{ path('catrobat_api_report_program') }}', '{{ url('login') }}',
+    new ProgramReport('{{ program.id }}', '{{ url('login') }}',
       "{{ 'success.report'                          |trans({}, 'catroweb') }}",
       '{{ "error"                                   |trans({}, "catroweb") }}',
       '{{ "programs.report"                         |trans({}, "catroweb") }}',

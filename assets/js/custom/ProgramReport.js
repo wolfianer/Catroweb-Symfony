@@ -4,7 +4,7 @@
 // eslint-disable-next-line no-unused-vars
 
 
-function ProgramReport (programId, reportUrl, loginUrl, reportSentText, errorText,
+function ProgramReport (programId, loginUrl, reportSentText, errorText,
                         reportButtonText, cancelText, reportDialogTitle,
                         sexualLabel, violenceLabel, hateLabel, improperLabel, drugsLabel, copycatLabel, otherLabel,
                         statusCodeOk, loggedIn) {
@@ -17,6 +17,8 @@ function ProgramReport (programId, reportUrl, loginUrl, reportSentText, errorTex
   const OTHER_VALUE = 'Other objection'
   const CHECKED = 'checked'
   const SESSION_OLD_REPORT_CATEGORY = 'oldReportCategory' + programId
+  
+  let reportUrl = 'http://localhost:8080/api/projects/' + programId + '/report'
   
   $('#top-app-bar__btn-report-project').click(function () {
     if (!loggedIn) {
@@ -73,7 +75,37 @@ function ProgramReport (programId, reportUrl, loginUrl, reportSentText, errorTex
   }
   
   function reportProgram (category) {
-    $.post(reportUrl, {
+   /* fetch(reportUrl) , {
+      method: 'POST',
+      headers: {
+        'Content-Type' : 'application/json'
+      },
+      body: JSON.stringify({
+        category: category}
+      )
+    }
+    .then(res => {
+    if(res.ok)
+    {
+      console.log('SUCCESS')
+    }else
+    {
+      console.log('ERROR')
+    }
+    })*/
+    $.post(reportUrl ,
+    {
+      category: category,
+    },function(data) {
+      if(data.statusCode === statusCodeOk)
+      {
+        console.log('OK')
+      }else
+      {
+        console.log('Felix')
+      }
+    })
+   /* $.post(baseUrl + '/api/projects/' + programId + '/report', {
       program: programId,
       category: category,
     }, function (data) {
@@ -97,7 +129,7 @@ function ProgramReport (programId, reportUrl, loginUrl, reportSentText, errorTex
         text: errorThrown,
         icon: 'error'
       })
-    })
+    })*/
   }
   
   function getReportDialogHtml (error, oldCategory) {

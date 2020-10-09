@@ -46,6 +46,11 @@ class ReportController extends AbstractController
   {
     /* @var $program Program */
     /* @var $user User */
+    $response = [];
+    $response['answer'] = $this->translator->trans('success.report', [], 'catroweb');
+    $response['statusCode'] = Response::INVALID_PROGRAM;
+
+    return JsonResponse::create($response);
 
     $entity_manager = $this->getDoctrine()->getManager();
 
