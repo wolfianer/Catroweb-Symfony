@@ -18,7 +18,7 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
   const CHECKED = 'checked'
   const SESSION_OLD_REPORT_CATEGORY = 'oldReportCategory' + programId
   
-  let reportUrl = 'http://localhost:8080/api/projects/' + programId + '/report'
+  let reportUrl = 'http://localhost:8080/api/project/' + programId + '/report'
   
   $('#top-app-bar__btn-report-project').click(function () {
     if (!loggedIn) {
@@ -75,7 +75,7 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
   }
   
   function reportProgram (category) {
-   /* fetch(reportUrl) , {
+    /*fetch(reportUrl) , {
       method: 'POST',
       headers: {
         'Content-Type' : 'application/json'
@@ -93,21 +93,45 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
       console.log('ERROR')
     }
     })*/
-    $.post(reportUrl ,
-    {
-      category: category,
-    },function(data) {
+    let data = [{
+      category: category
+    }]
+  
+    $.ajax({
+      url: reportUrl,
+      type: "POST",
+      data: {
+        category: category
+      }, //JSON.stringify(data),
+      dataType: 'json',
+      contentType: 'application/json; charset=UTF-8',
+      success: function(response) {
+        console.log(response)
+      },
+      error: function (response){
+        console.log(response)
+      },
+      fail: function (response)
+      {
+        console.log(response)
+      }
+    });
+  
+    /*$.post(reportUrl
+    ,function(data) {
       if(data.statusCode === statusCodeOk)
       {
         console.log('OK')
       }else
       {
-        console.log('Felix')
+        console.log('error')
       }
+    }).fail(function (XMLHttpRequest, textStatus, errorThrown) {
+      console.log('fail')
     })
-   /* $.post(baseUrl + '/api/projects/' + programId + '/report', {
+    /*$.post(reportUrl, {
       program: programId,
-      category: category,
+      category: 'Hateful or abusive content',
     }, function (data) {
       if (data.statusCode === statusCodeOk) {
         Swal.fire({
@@ -126,7 +150,7 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
     }).fail(function (XMLHttpRequest, textStatus, errorThrown) {
       Swal.fire({
         title: errorText,
-        text: errorThrown,
+        text: category,
         icon: 'error'
       })
     })*/
