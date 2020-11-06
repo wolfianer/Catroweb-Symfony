@@ -121,18 +121,6 @@ class ProgramInappropriateReport
     return $this->category;
   }
 
-  public function setNote(string $note): ProgramInappropriateReport
-  {
-    $this->note = $note;
-
-    return $this;
-  }
-
-  public function getNote(): ?string
-  {
-    return $this->note;
-  }
-
   public function setTime(DateTime $time): ProgramInappropriateReport
   {
     $this->time = $time;

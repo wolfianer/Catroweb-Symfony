@@ -90,6 +90,15 @@ security:
                 authenticators:
                     - lexik_jwt_authentication.jwt_token_authenticator
 
+        api_projectidreportpost:
+            provider: chain_provider
+            pattern: ^/api/project/
+            methods: [POST]
+            stateless: true
+            guard:
+                authenticators:
+                    - lexik_jwt_authentication.jwt_token_authenticator
+
         #
         # API V1 deprecated
         #

@@ -3,11 +3,10 @@
 
 // eslint-disable-next-line no-unused-vars
 
-
 function ProgramReport (programId, loginUrl, reportSentText, errorText,
-                        reportButtonText, cancelText, reportDialogTitle,
-                        sexualLabel, violenceLabel, hateLabel, improperLabel, drugsLabel, copycatLabel, otherLabel,
-                        statusCodeOk, loggedIn) {
+  reportButtonText, cancelText, reportDialogTitle,
+  sexualLabel, violenceLabel, hateLabel, improperLabel, drugsLabel, copycatLabel, otherLabel,
+  statusCodeOk, loggedIn) {
   const SEXUAL_VALUE = 'Sexual content'
   const VIOLENCE_VALUE = 'Graphic violence'
   const HATE_VALUE = 'Hateful or abusive content'
@@ -17,23 +16,22 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
   const OTHER_VALUE = 'Other objection'
   const CHECKED = 'checked'
   const SESSION_OLD_REPORT_CATEGORY = 'oldReportCategory' + programId
-  
-  let reportUrl = 'http://localhost:8080/api/project/' + programId + '/report'
-  
+
+  const reportUrl = 'http://localhost/api/project/' + programId + '/report'
+
   $('#top-app-bar__btn-report-project').click(function () {
     if (!loggedIn) {
       window.location.href = loginUrl
       return
     }
-    
-    
+
     let oldReportCategory = sessionStorage.getItem(SESSION_OLD_REPORT_CATEGORY)
     if (oldReportCategory === null) {
       oldReportCategory = ''
     }
     reportProgramDialog(false, oldReportCategory)
   })
-  
+
   function reportProgramDialog (error = false, oldCategory = '') {
     Swal.fire({
       title: reportDialogTitle,
@@ -57,15 +55,14 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
       }
     })
   }
-  
-  
+
   $(document).on('change', 'input[name=report-category]', function () {
     sessionStorage.setItem(SESSION_OLD_REPORT_CATEGORY, $('input[name=report-category]:checked').val())
   })
-  
+
   function handleSubmitProgramReport (result) {
     let category = result[0]
-    
+
     if (category === null) {
       category = ''
       reportProgramDialog(true, category)
@@ -73,67 +70,22 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
       reportProgram(category)
     }
   }
-  
+
   function reportProgram (category) {
-    /*fetch(reportUrl) , {
-      method: 'POST',
-      headers: {
-        'Content-Type' : 'application/json'
-      },
-      body: JSON.stringify({
-        category: category}
-      )
-    }
-    .then(res => {
-    if(res.ok)
-    {
-      console.log('SUCCESS')
-    }else
-    {
-      console.log('ERROR')
-    }
-    })*/
-    let data = [{
-      category: category
-    }]
-  
     $.ajax({
       url: reportUrl,
-      type: "POST",
-      data: {
+      type: 'POST',
+      data: JSON.stringify({
         category: category
-      }, //JSON.stringify(data),
+      }),
       dataType: 'json',
       contentType: 'application/json; charset=UTF-8',
+      beforeSend: function (xhr) {   //Include the bearer token in header
+        xhr.setRequestHeader('Authorization', 'Bearer ' +
+          'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE2MDQ1OTAwMjEsImV4cCI6MTYwNDU5MzYyMSwicm9sZXMiOlsiUk9MRV9TVVBFUl9BRE1JTiIsIlJPTEVfVVNFUiJdLCJ1c2VybmFtZSI6ImNhdHJvd2ViIn0.hBAcX5x4gYRdE1-89DiHUV8UwSWMEhmGt2Es_NcKxtpU2aAriVXS6fHZct5re6eKLsw_V68GlZCFUbR7PyaKiHDoylCMXt8wmV3GA5IPE-N9_OJ_R8-w_u7PNpG4Dxfzd5iM9yz174LJySPGaAef8AcV6shaCs2vlNYgITN3VMBcLsMqQ2qVEAhZcFjgUgKGlwiXDkghMdqCNH-gtOHrLzhIMHVJwU1b79eH5KXnMZI1rvRLLPlbJxGJkcSL9lWZmFW-FZM8g3rwUIADvVXR0G-mRx1dkkFIwxQ-e039XlQNLQ18m3DfdaBfe_bEybOjQ0w4JANjjOBeyfzFAJNxMp59z2pTHtuJ2FGZQxzE-NcG4aC9_JiZFP3tUItogasc0qI3MqYmKSxkHDeP5G7Z19CHygQK4a2_mb6C9rn--hd-t_svabJImFzAHu5Cbm6ZD2JLqg7BFtYP7u1Dm8KMPA1LVvnSHOsD5FWDvuWweV5hG2OKgvPFoNwUDECsY1ukgesf7EcFcgPdPARlp-hj6FphSlJpHhPar7bcZbvBX1gYfyNZ_j2ppgGQhgk0Ya08p_f7TWrn9qCqDl_wjkhiQwnogUt7_0mvKnPJxyj-8pO2whWYlAZli2S9XwjbzZPDizBy0CLuT4hbvoehponRLg87B4YSWyCICiobHBBVI_A'
+        )
+      },
       success: function(response) {
-        console.log(response)
-      },
-      error: function (response){
-        console.log(response)
-      },
-      fail: function (response)
-      {
-        console.log(response)
-      }
-    });
-  
-    /*$.post(reportUrl
-    ,function(data) {
-      if(data.statusCode === statusCodeOk)
-      {
-        console.log('OK')
-      }else
-      {
-        console.log('error')
-      }
-    }).fail(function (XMLHttpRequest, textStatus, errorThrown) {
-      console.log('fail')
-    })
-    /*$.post(reportUrl, {
-      program: programId,
-      category: 'Hateful or abusive content',
-    }, function (data) {
-      if (data.statusCode === statusCodeOk) {
         Swal.fire({
           text: reportSentText,
           icon: 'success',
@@ -141,23 +93,29 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
         }).then(function () {
           window.location.href = '/'
         })
-      } else {
+        console.log(response)
+      },
+      error: function (data, textStatus, xhr){
         Swal.fire({
           title: errorText,
+          text: data.status + data.statusText,
           icon: 'error'
         })
+        console.log(data, textStatus, xhr)
+      },
+      fail: function (data, textStatus, xhr)
+      {
+        Swal.fire({
+          title: errorText,
+          text: data.status + data.statusText,
+          icon: 'error'
+        })
+        console.log(data, textStatus, xhr)
       }
-    }).fail(function (XMLHttpRequest, textStatus, errorThrown) {
-      Swal.fire({
-        title: errorText,
-        text: category,
-        icon: 'error'
-      })
-    })*/
+    })
   }
-  
+
   function getReportDialogHtml (error, oldCategory) {
-    
     let checkedSexual = ''
     let checkedViolence = ''
     let checkedHate = ''
@@ -165,7 +123,7 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
     let checkedDrugs = ''
     let checkedCopycat = ''
     let checkedOther = ''
-    
+
     switch (oldCategory) {
       case SEXUAL_VALUE :
         checkedSexual = CHECKED
@@ -192,7 +150,7 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
         checkedSexual = CHECKED
         break
     }
-    
+
     return '<div class="text-left">' +
       '<div class="radio-item">' +
       '<input type="radio" id="report-sexual" name="report-category" value="' +
@@ -223,7 +181,7 @@ function ProgramReport (programId, loginUrl, reportSentText, errorText,
       '<input type="radio" id="report-copycat" name="report-category" value="' +
       COPYCAT_VALUE + '" ' + checkedCopycat + '>' +
       '<label for="report-copycat">' + copycatLabel + '</label>' +
-      '</div>'+
+      '</div>' +
       '<div class="radio-item">' +
       '<input type="radio" id="report-other" name="report-category" value="' +
       OTHER_VALUE + '" ' + checkedOther + '>' +

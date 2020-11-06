@@ -321,9 +321,7 @@ class ProfileController extends AbstractController
     ]);
   }
 
-  /**
-   * @Route("/userUploadAvatar", name="profile_upload_avatar", methods={"POST"})
-   */
+
   public function uploadAvatarAction(Request $request, UserManager $user_manager): Response
   {
     /** @var User|null $user */

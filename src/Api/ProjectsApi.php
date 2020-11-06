@@ -8,13 +8,16 @@ use App\Catrobat\Services\ImageRepository;
 use App\Entity\ExampleProgram;
 use App\Entity\FeaturedProgram;
 use App\Entity\Program;
+use App\Entity\ProgramInappropriateReport;
 use App\Entity\ProgramManager;
 use App\Entity\User;
 use App\Entity\UserManager;
 use App\Repository\FeaturedRepository;
 use App\Utils\APIHelper;
 use App\Utils\ElapsedTimeStringFormatter;
+use App\Utils\TimeUtils;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\NoResultException;
 use Exception;
 use OpenAPI\Server\Api\ProjectsApiInterface;
 use OpenAPI\Server\Model\FeaturedProjectResponse;
@@ -304,18 +307,48 @@ class ProjectsApi extends AbstractController implements ProjectsApiInterface
 
   /**
    * {@inheritdoc}
+   * @throws NoResultException
+   * @throws Exception
    */
   public function projectIdReportPost(string $id, ProjectReportRequest $project_report_request, &$responseCode, array &$responseHeaders)
   {
-    /*
-    $response = [];
+
+    $program = $this->program_manager->find($id);
+
+    if ($program->getApproved() || $this->program_manager->getFeaturedRepository()->isFeatured($program))
+    {
+      $response['answer'] = $this->translator->trans('success.report', [], 'catroweb');
+
+      return;
+    }
+    /** @var User $reporting_user */
+    $reporting_user =  $this->user_manager->find($this->getUser());
+
+    $previous_report = $program->getReportFromReportingUser($reporting_user);
+    $entity_manager = $this->getDoctrine()->getManager();
+    if($previous_report)
+    {
+      if($previous_report->getState() == 1)
+      {
+        $previous_report->setCategory($project_report_request->getCategory());
+        $previous_report->setTime(TimeUtils::getDateTime());
+        $entity_manager->flush();
+      }
+
+      $response['answer'] = $this->translator->trans('success.report', [], 'catroweb');
+      return;
+    }
+
+    $report = new ProgramInappropriateReport();
+    $report->setCategory($project_report_request->getCategory());
+    $report->setProgram($program);
+    $report->setTime(TimeUtils::getDateTime());
+    $report->setReportingUser($reporting_user);
+    $entity_manager->persist($report);
+    $entity_manager->flush();
+
     $response['answer'] = $this->translator->trans('success.report', [], 'catroweb');
-    $response['statusCode'] = Response::INVALID_PROGRAM;
-
-    return JsonResponse::create($response);
-
-    $entity_manager = $this->getDoctrine()->getManager();*/
-    return Response::HTTP_OK;
+    $response['statusCode'] = Response::HTTP_OK;
   }
 
   /**
