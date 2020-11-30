@@ -8,27 +8,27 @@
     "packages": [
         {
             "name": "beberlei/doctrineextensions",
-            "version": "v1.2.9",
+            "version": "v1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/beberlei/DoctrineExtensions.git",
-                "reference": "53a71be2d3a153704d53b68bda24b3207f6a00aa"
+                "reference": "008f162f191584a6c37c03a803f718802ba9dd9a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/beberlei/DoctrineExtensions/zipball/53a71be2d3a153704d53b68bda24b3207f6a00aa",
-                "reference": "53a71be2d3a153704d53b68bda24b3207f6a00aa",
+                "url": "https://api.github.com/repos/beberlei/DoctrineExtensions/zipball/008f162f191584a6c37c03a803f718802ba9dd9a",
+                "reference": "008f162f191584a6c37c03a803f718802ba9dd9a",
                 "shasum": ""
             },
             "require": {
-                "doctrine/orm": "^2.6",
-                "php": "^7.1"
+                "doctrine/orm": "^2.7",
+                "php": "^7.2 || ^8.0"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^2.14",
                 "nesbot/carbon": "*",
-                "phpunit/phpunit": "^7.0 || ^8.0",
-                "symfony/yaml": "^4.2",
+                "phpunit/phpunit": "^7.0 || ^8.0 || ^9.0",
+                "symfony/yaml": "^4.2 || ^5.0",
                 "zf1/zend-date": "^1.12",
                 "zf1/zend-registry": "^1.12"
             },
@@ -52,13 +52,13 @@
                     "email": "steve@steve.ly"
                 }
             ],
-            "description": "A set of extensions to Doctrine 2 that add support for additional query functions available in MySQL and Oracle.",
+            "description": "A set of extensions to Doctrine 2 that add support for additional query functions available in MySQL, Oracle, PostgreSQL and SQLite.",
             "keywords": [
                 "database",
                 "doctrine",
                 "orm"
             ],
-            "time": "2020-11-02T10:57:56+00:00"
+            "time": "2020-11-29T07:37:23+00:00"
         },
         {
             "name": "catrobat/capi",
@@ -16344,13 +16344,13 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/wapmorgan/PhpCodeFixer.git",
-                "reference": "12b2998163eabb54704b5d93a63666cebde91ebf"
+                "url": "https://github.com/wapmorgan/PhpDeprecationDetector.git",
+                "reference": "a89318c257d82179fd26970156fd92e7a0724862"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wapmorgan/PhpCodeFixer/zipball/12b2998163eabb54704b5d93a63666cebde91ebf",
-                "reference": "12b2998163eabb54704b5d93a63666cebde91ebf",
+                "url": "https://api.github.com/repos/wapmorgan/PhpDeprecationDetector/zipball/a89318c257d82179fd26970156fd92e7a0724862",
+                "reference": "a89318c257d82179fd26970156fd92e7a0724862",
                 "shasum": ""
             },
             "require": {
@@ -16358,6 +16358,9 @@
                 "ext-tokenizer": "*",
                 "php": ">=5.4",
                 "symfony/console": "^3.4|^4.0|^5.0"
+            },
+            "replace": {
+                "wapmorgan/php-code-fixer": "self.version"
             },
             "suggest": {
                 "ext-json": "Adds ability to store report in JSON format"
@@ -16395,7 +16398,8 @@
                 "BSD-3-Clause"
             ],
             "description": "Analyzer of PHP code to search issues with deprecated functionality in newer interpreter versions.",
-            "time": "2020-11-04T14:16:51+00:00"
+            "abandoned": "wapmorgan/php-deprecation-detector",
+            "time": "2020-11-29T23:46:03+00:00"
         },
         {
             "name": "webmozart/assert",
