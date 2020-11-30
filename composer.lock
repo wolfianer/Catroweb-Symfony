@@ -15823,16 +15823,16 @@
         },
         {
             "name": "symfony/phpunit-bridge",
-            "version": "v5.1.8",
+            "version": "v5.1.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/phpunit-bridge.git",
-                "reference": "61744927348cd391ac12f7c6b70544991275845c"
+                "reference": "6b03f0ca34ad03a2606fd43cf095fa6dc4dc8313"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/phpunit-bridge/zipball/61744927348cd391ac12f7c6b70544991275845c",
-                "reference": "61744927348cd391ac12f7c6b70544991275845c",
+                "url": "https://api.github.com/repos/symfony/phpunit-bridge/zipball/6b03f0ca34ad03a2606fd43cf095fa6dc4dc8313",
+                "reference": "6b03f0ca34ad03a2606fd43cf095fa6dc4dc8313",
                 "shasum": ""
             },
             "require": {
@@ -15842,7 +15842,8 @@
                 "phpunit/phpunit": "<4.8.35|<5.4.3,>=5.0|<6.4,>=6.0|9.1.2"
             },
             "require-dev": {
-                "symfony/deprecation-contracts": "^2.1"
+                "symfony/deprecation-contracts": "^2.1",
+                "symfony/error-handler": "^4.4|^5.0"
             },
             "suggest": {
                 "symfony/error-handler": "For tracking deprecated interfaces usages at runtime with DebugClassLoader"
@@ -15898,7 +15899,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2020-10-24T15:53:55+00:00"
+            "time": "2020-11-26T23:46:31+00:00"
         },
         {
             "name": "symfony/polyfill-php70",
@@ -16344,13 +16345,13 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/wapmorgan/PhpCodeFixer.git",
-                "reference": "12b2998163eabb54704b5d93a63666cebde91ebf"
+                "url": "https://github.com/wapmorgan/PhpDeprecationDetector.git",
+                "reference": "a89318c257d82179fd26970156fd92e7a0724862"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wapmorgan/PhpCodeFixer/zipball/12b2998163eabb54704b5d93a63666cebde91ebf",
-                "reference": "12b2998163eabb54704b5d93a63666cebde91ebf",
+                "url": "https://api.github.com/repos/wapmorgan/PhpDeprecationDetector/zipball/a89318c257d82179fd26970156fd92e7a0724862",
+                "reference": "a89318c257d82179fd26970156fd92e7a0724862",
                 "shasum": ""
             },
             "require": {
@@ -16358,6 +16359,9 @@
                 "ext-tokenizer": "*",
                 "php": ">=5.4",
                 "symfony/console": "^3.4|^4.0|^5.0"
+            },
+            "replace": {
+                "wapmorgan/php-code-fixer": "self.version"
             },
             "suggest": {
                 "ext-json": "Adds ability to store report in JSON format"
@@ -16395,7 +16399,8 @@
                 "BSD-3-Clause"
             ],
             "description": "Analyzer of PHP code to search issues with deprecated functionality in newer interpreter versions.",
-            "time": "2020-11-04T14:16:51+00:00"
+            "abandoned": "wapmorgan/php-deprecation-detector",
+            "time": "2020-11-29T23:46:03+00:00"
         },
         {
             "name": "webmozart/assert",
