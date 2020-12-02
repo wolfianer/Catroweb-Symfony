@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6c534eec199bcf393ab8ca3a02f1d07b",
+    "content-hash": "3f2ff882fea9fd739068cbf8b15ecc26",
     "packages": [
         {
             "name": "beberlei/doctrineextensions",
@@ -14079,16 +14079,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.57",
+            "version": "0.12.58",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "f9909d1d0c44b4cbaf72babcf80e8f14d6fdd55b"
+                "reference": "2a4847df6047b30af28854ed9dc95304cdb56ae5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/f9909d1d0c44b4cbaf72babcf80e8f14d6fdd55b",
-                "reference": "f9909d1d0c44b4cbaf72babcf80e8f14d6fdd55b",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/2a4847df6047b30af28854ed9dc95304cdb56ae5",
+                "reference": "2a4847df6047b30af28854ed9dc95304cdb56ae5",
                 "shasum": ""
             },
             "require": {
@@ -14131,7 +14131,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2020-11-21T12:53:28+00:00"
+            "time": "2020-11-29T13:32:03+00:00"
         },
         {
             "name": "phpstan/phpstan-doctrine",
@@ -16344,13 +16344,13 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/wapmorgan/PhpCodeFixer.git",
-                "reference": "12b2998163eabb54704b5d93a63666cebde91ebf"
+                "url": "https://github.com/wapmorgan/PhpDeprecationDetector.git",
+                "reference": "a89318c257d82179fd26970156fd92e7a0724862"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wapmorgan/PhpCodeFixer/zipball/12b2998163eabb54704b5d93a63666cebde91ebf",
-                "reference": "12b2998163eabb54704b5d93a63666cebde91ebf",
+                "url": "https://api.github.com/repos/wapmorgan/PhpDeprecationDetector/zipball/a89318c257d82179fd26970156fd92e7a0724862",
+                "reference": "a89318c257d82179fd26970156fd92e7a0724862",
                 "shasum": ""
             },
             "require": {
@@ -16358,6 +16358,9 @@
                 "ext-tokenizer": "*",
                 "php": ">=5.4",
                 "symfony/console": "^3.4|^4.0|^5.0"
+            },
+            "replace": {
+                "wapmorgan/php-code-fixer": "self.version"
             },
             "suggest": {
                 "ext-json": "Adds ability to store report in JSON format"
@@ -16395,7 +16398,8 @@
                 "BSD-3-Clause"
             ],
             "description": "Analyzer of PHP code to search issues with deprecated functionality in newer interpreter versions.",
-            "time": "2020-11-04T14:16:51+00:00"
+            "abandoned": "wapmorgan/php-deprecation-detector",
+            "time": "2020-11-29T23:46:03+00:00"
         },
         {
             "name": "webmozart/assert",
