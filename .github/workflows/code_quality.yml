@@ -69,7 +69,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: npm-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -106,7 +106,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: npm-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -147,7 +147,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             vendor
@@ -191,7 +191,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             vendor
@@ -235,7 +235,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             vendor
@@ -290,7 +290,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             vendor
@@ -344,7 +344,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             vendor
@@ -384,7 +384,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             vendor
@@ -425,7 +425,7 @@ jobs:
 
       # Optional - improve performance by caching
       - id: composer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.4
         with:
           path: |
             vendor
